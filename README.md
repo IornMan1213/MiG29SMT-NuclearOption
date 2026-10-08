@@ -8,12 +8,14 @@
   on the right, an up-front control panel under the HUD, and standby airspeed, altimeter and attitude instruments.
 - **The SMT's dorsal spine** ("hump"), which holds the extra fuel tank: the spine behind the canopy raised by up to 22 cm.
 - **More internal fuel**: 4,460 kg (the 9.12 carries 3,690 kg).
+- **R-77 (RVV-AE)** active radar missile, with its lattice tail fins, on AKU-170 launchers on the inner and middle pylons; the
+  default loadout is four R-77 and two R-73.
 
 Everything else comes from the MiG-29 mod: flight model, R-27R / R-27T / R-73 / R-60M, GSh-30-1, drop tanks, flares and chaff,
 airbrakes, brake chute, intake FOD doors, canopy and gear, damage display, liveries, and rear-view mirrors with the
 [NO Mirrors](https://github.com/IornMan1213/NuclearOption-Mirrors) plugin.
 
-Planned: R-77 (RVV-AE) and air-to-ground guided weapons, the retractable refuelling probe, the wider ILS-31 HUD, SMT liveries.
+Planned: air-to-ground guided weapons (Kh-29, Kh-31, KAB-500), the retractable refuelling probe, the wider ILS-31 HUD, SMT liveries.
 
 The rest of this file is still the MiG-29 mod's.
 

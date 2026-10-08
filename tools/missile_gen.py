@@ -171,6 +171,64 @@ def r60m():
     return m
 
 
+def bar(m, a, b, thick, z0, z1, er, et, cell):
+    """A thin flat bar from a to b, given as (radial s, tangential t) in the plane spanned by er/et, extruded from z0 to z1."""
+    ez = np.array([0, 0, 1.0])
+    P = lambda s, t, z: s * er + t * et + z * ez
+    d = np.array(b, float) - np.array(a, float); d /= np.linalg.norm(d) + 1e-12
+    nrm = np.array([-d[1], d[0]]) * thick / 2                # in-plane normal of the bar, (s, t)
+    c = [(a[0] + nrm[0], a[1] + nrm[1]), (b[0] + nrm[0], b[1] + nrm[1]), (b[0] - nrm[0], b[1] - nrm[1]), (a[0] - nrm[0], a[1] - nrm[1])]
+    ring0 = [P(s, t, z0) for s, t in c]; ring1 = [P(s, t, z1) for s, t in c]
+    mid = np.mean(ring0 + ring1, axis=0)
+    for i in range(4):
+        q = [ring0[i], ring0[(i + 1) % 4], ring1[(i + 1) % 4], ring1[i]]
+        n = np.cross(q[1] - q[0], q[3] - q[0]); n = n if np.dot(n, np.mean(q, axis=0) - mid) > 0 else -n
+        m.quad(*q, cell, n)
+    m.quad(*ring1, cell, ez); m.quad(*ring0[::-1], cell, -ez)
+
+
+def grid_fin(m, roll_deg, s0, s1, w, z0, depth, cell="lgrey"):
+    """Lattice (grid) tail fin, as on the R-77: a rectangular frame standing out from the body from s0 to s1, w wide, its face
+    across the airflow, filled with a diagonal lattice; on a short stub."""
+    phi = math.radians(roll_deg)
+    er = np.array([math.cos(phi), math.sin(phi), 0.0]); et = np.array([-math.sin(phi), math.cos(phi), 0.0])
+    z1 = z0 + depth; t = 0.004
+    for a, b in (((s0, -w / 2), (s1, -w / 2)), ((s0, w / 2), (s1, w / 2)), ((s0, -w / 2), (s0, w / 2)), ((s1, -w / 2), (s1, w / 2))):
+        bar(m, a, b, t, z0, z1, er, et, cell)
+    h = s1 - s0
+    for k in range(-2, 3):                                   # diagonal lattice: lines at +-45 deg, clipped to the frame
+        for sgn in (1, -1):
+            off = k * h / 2.5
+            pts = []
+            for s in (s0, s1):
+                tt = sgn * (s - (s0 + s1) / 2) + off
+                pts.append((s, tt))
+            (sa, ta), (sb, tb) = pts
+            # clip to |t| <= w/2
+            if max(ta, tb) < -w / 2 or min(ta, tb) > w / 2: continue
+            def clipt(s_, t_, s2, t2):
+                if abs(t_) <= w / 2: return s_, t_
+                tc = math.copysign(w / 2, t_); f = (tc - t_) / (t2 - t_)
+                return s_ + (s2 - s_) * f, tc
+            pa = clipt(sa, ta, sb, tb); pb = clipt(sb, tb, sa, ta)
+            if math.dist(pa, pb) > 0.01: bar(m, pa, pb, 0.0025, z0, z1, er, et, cell)
+    stub = 0.012                                             # hinge stub from the body to the frame
+    bar(m, (s0 - 0.03, 0.0), (s0, 0.0), stub, z0 + depth * 0.2, z1 - depth * 0.2, er, et, "dgrey")
+
+
+def r77():
+    """R-77 (RVV-AE): 3.6 m, 200 mm body, ogive radome, four long low-aspect strake wings along the middle and four lattice
+    control fins at the tail (X configuration)."""
+    m = Mesh(); L = 3.60; R = 0.10; zt = L / 2
+    prof = [(zt, 0), (zt - 0.03, 0.022), (zt - 0.10, 0.048), (zt - 0.20, 0.070), (zt - 0.32, 0.087), (zt - 0.46, 0.097), (zt - 0.55, R),
+            (-zt + 0.06, R), (-zt + 0.02, 0.092), (-zt, 0.080)]
+    m.revolve(prof, cells=lambda z: "lgrey" if z > zt - 0.55 else ("yellow" if zt - 0.95 < z < zt - 0.89 else "white"))
+    for roll in (45, 135, 225, 315):
+        m.fin([(R, zt - 1.10), (R, -zt + 0.75), (R + 0.055, -zt + 0.85), (R + 0.055, zt - 1.30)], roll, 0.008, "white")   # strakes
+        grid_fin(m, roll, R + 0.03, R + 0.20, 0.17, -zt + 0.01, 0.055)
+    return m
+
+
 def levelled(m, z1, depth, deg):
     """The pylon stations follow their fairings, which slope `deg` nose-down; the missile must stay parallel to the fuselage (user
     reference photo, v0.8.9). In the station frame a level line rises toward the nose, so the beam's bottom and the rail are tilted by
@@ -258,6 +316,11 @@ def aku470(deg=2.5):
     return levelled(launcher(-1.15, 0.95, 0.05, 0.14, nose=0.50, tail=0.30, rail_depth=0.015, rail_half_w=0.028), 0.95, 0.14, deg)
 
 
+def aku170(deg=2.5):
+    """AKU-170 ejector launcher for the R-77: a short beam, missile body top at y = -0.10."""
+    return levelled(launcher(-0.80, 0.75, 0.05, 0.10, nose=0.35, tail=0.25, rail_depth=0.015, rail_half_w=0.022), 0.75, 0.10, deg)
+
+
 def tank_profile(L, R, nose, tail, tail_r, n=10):
     zt = L / 2; prof = []
     for i in range(n + 1):                      # elliptical nose
@@ -321,6 +384,7 @@ if __name__ == "__main__":
     parts = [r73().dump("R73"), r27r().dump("R27R"), r27t().dump("R27T"), r60m().dump("R60M"),
              apu73().dump("APU73"), aku470().dump("AKU470"), apu60().dump("APU60"),
              apu73(5.0, 0.04).dump("APU73_O"), apu60(5.0, 0.04).dump("APU60_O"),   # outer pylons: their fairing slopes 5 deg
+             r77().dump("R77"), aku170().dump("AKU170"),                            # MiG-29SMT: R-77 (RVV-AE) on its AKU-170
              ptb1500().dump("PTB1500"), ptb1150().dump("PTB1150"),
              ptb_pylon(0.08, 1.9, 0.12).dump("PTB_PYLON_C"), ptb_pylon(0.10, 1.6, 0.10).dump("PTB_PYLON_W")]
     json.dump({"parts": parts}, open(OUT + "/missiles.json", "w"))

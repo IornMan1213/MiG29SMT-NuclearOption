@@ -6,6 +6,8 @@ Forked from the MiG-29 Fulcrum mod 0.9.0 as a separate mod (own keys, weapons, p
   standby airspeed, altimeter and attitude ball. The 9.12's round flight instruments, HSI, radar altimeter, clock, oxygen and cabin
   gauges are gone.
 - The SMT's dorsal spine (hump) raised behind the canopy; internal fuel 4,460 kg.
+- R-77 (RVV-AE) active radar missile with lattice fins, on AKU-170 launchers (inner and middle pylons). Preset loadouts
+  built around it (four R-77 and two R-73 by default).
 
 The MiG-29 mod's history follows.
 

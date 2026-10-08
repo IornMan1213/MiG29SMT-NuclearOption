@@ -27,7 +27,7 @@ namespace MiG29SMTTools
         [Serializable] class PartDump { public string name; public float[] vertices, normals, uvs; public int[] triangles; }
         [Serializable] class Dump { public PartDump[] parts; }
 
-        public class Result { public ScriptableObject r73Mount, r27Mount, r27tMount, r60Mount, gunMount, ptb1500Mount, ptb1150Mount, r73OuterMount, r60OuterMount; }
+        public class Result { public ScriptableObject r77Mount, r73Mount, r27Mount, r27tMount, r60Mount, gunMount, ptb1500Mount, ptb1150Mount, r73OuterMount, r60OuterMount; }
 
         public delegate T Saver<T>(T obj, string path) where T : UnityEngine.Object;
 
@@ -179,6 +179,35 @@ namespace MiG29SMTTools
                 missileY: -0.08f - 0.06f, r60Info, 2.09f, 0.06f, $"{Dir}/mig29_R60M_APU60.prefab", InnerSlope, 0.80f);
             var r60Mount = CloneMount("AAM1_single", "mig29smt_R60M_mount", r60MountPrefab, r60Info, "mig29smt_R60M_single", "R-60M", mass: 66f, emptyMass: 22f, drag: 0.025f);
 
+            // ---------- R-77 (RVV-AE): active radar, the SMT's medium-range missile (the game's AAM2, which homes actively) ----------
+            var r77 = MakeMissile("AAM2", "mig29smt_R77", meshes["R77"], mat, length: 3.60f, radius: 0.10f, seekerFrom: null, seekerType: null);
+            Tune(r77, so =>
+            {
+                so.FindProperty("mass").floatValue = 175f;
+                so.FindProperty("finArea").floatValue = 0.45f;
+                so.FindProperty("gLimit").floatValue = 40f;        // lattice fins: very manoeuvrable for a medium-range missile
+                so.FindProperty("maxTurnRate").floatValue = 32f;
+                so.FindProperty("torque").floatValue = 2.2f;
+                Motor(so, 0, thrust: 34000f, burn: 2.5f, fuel: 40f, tvc: 0f);
+                Motor(so, 1, thrust: 15000f, burn: 7.0f, fuel: 32f, tvc: 0f);
+            });
+            var r77Prefab = SavePrefab(r77, $"{Dir}/mig29_R77.prefab");
+            var r77Def = CloneDef("AAM2", "mig29smt_R77_def", d =>
+            {
+                d.FindProperty("jsonKey").stringValue = "mig29smt_R77";
+                d.FindProperty("unitName").stringValue = "R-77";
+                d.FindProperty("description").stringValue = "R-77 / RVV-AE (AA-12 Adder). Medium-range active radar homing missile with lattice control fins: fire-and-forget once its own radar has the target.";
+                d.FindProperty("mass").floatValue = 175f;
+                d.FindProperty("unitPrefab").objectReferenceValue = r77Prefab;
+            });
+            SetDefinition(r77Prefab, r77Def);
+            var r77Info = CloneInfo("AAM2", "mig29smt_R77_info", r77Prefab, "R-77", "R-77",
+                "Medium-range active radar missile. Fire-and-forget; very agile for its size.",
+                minRange: 1000f, maxRange: 60000f, minAlignment: 30f, cost: 0.90f, massPerRound: 175f);
+            var r77MountPrefab = MakeMount("AAM2_single", "mig29smt_R77_AKU170", "pylon", "aam2", meshes["AKU170"], meshes["R77"], mat,
+                missileY: -0.10f - 0.10f, r77Info, 3.60f, 0.10f, $"{Dir}/mig29_R77_AKU170.prefab", InnerSlope, 0.75f);
+            var r77Mount = CloneMount("AAM2_single", "mig29smt_R77_mount", r77MountPrefab, r77Info, "mig29smt_R77_single", "R-77", mass: 220f, emptyMass: 45f, drag: 0.06f);
+
             // outer pylons: steeper fairing, own launchers (same missiles, same names in the loadout menu)
             var r73OuterPrefab = MakeMount("AAM1_single", "mig29smt_R73_APU73_outer", "pylon", "aam1", meshes["APU73_O"], meshes["R73"], mat,
                 missileY: -0.10f - 0.085f, r73Info, 2.90f, 0.085f, $"{Dir}/mig29_R73_APU73_outer.prefab", OuterSlope, 1.05f);
@@ -196,8 +225,8 @@ namespace MiG29SMTTools
             var ptb1150Mount = BuildDropTank("PTB1150", "PTB-1150", meshes["PTB1150"], meshes["PTB_PYLON_W"], mat, length: 4.6f, halfHeight: 0.32f, radius: 0.32f,
                 pylonDepth: 0.10f, fullMass: 1000f, pylonMass: 30f, drag: 0.08f, rcs: 0.05f,
                 desc: "PTB-1150 wing drop tanks: 1,150 litres (about 905 kg) of fuel each, used before the internal fuel. Select them and fire to drop them, or press the jettison key (Ctrl+J by default).");
-            Debug.Log("[MiG29] weapons built: R-73, R-27R, R-27T, R-60M, GSh-30-1, PTB-1500, PTB-1150");
-            return new Result { r73Mount = r73Mount, r27Mount = r27Mount, r27tMount = r27tMount, r60Mount = r60Mount, gunMount = gunMount,
+            Debug.Log("[MiG29] weapons built: R-77, R-73, R-27R, R-27T, R-60M, GSh-30-1, PTB-1500, PTB-1150");
+            return new Result { r77Mount = r77Mount, r73Mount = r73Mount, r27Mount = r27Mount, r27tMount = r27tMount, r60Mount = r60Mount, gunMount = gunMount,
                 r73OuterMount = r73OuterMount, r60OuterMount = r60OuterMount,
                 ptb1500Mount = ptb1500Mount, ptb1150Mount = ptb1150Mount };
         }
@@ -700,10 +729,10 @@ namespace MiG29SMTTools
                 }
             }
             sets.GetArrayElementAtIndex(inner).FindPropertyRelative("name").stringValue = "Inner Pylons";
-            AddOptions(inner, w.r27Mount, w.r27tMount, w.r73Mount, w.r60Mount, w.ptb1150Mount);
+            AddOptions(inner, w.r77Mount, w.r27Mount, w.r27tMount, w.r73Mount, w.r60Mount, w.ptb1150Mount);
             AddStock(sets.GetArrayElementAtIndex(inner), InnerExtra);
             sets.GetArrayElementAtIndex(middle).FindPropertyRelative("name").stringValue = "Middle Pylons";
-            AddOptions(middle, w.r73Mount, w.r60Mount);
+            AddOptions(middle, w.r77Mount, w.r73Mount, w.r60Mount);
             AddStock(sets.GetArrayElementAtIndex(middle), MiddleExtra);
             // The middle pylons are 0.74 m outboard of the inner ones: side-by-side racks (GPO-500 x2 is 0.8 m wide) on both touched
             // (user screenshot, v0.8.7). The middle pylons take single stores, as on the real jet; the inner keep the racks.
@@ -804,11 +833,13 @@ namespace MiG29SMTTools
         public static void SetLoadouts(SerializedObject pso, Result w)
         {
             UnityEngine.Object Stock(string n) => AssetDatabase.LoadAssetAtPath<ScriptableObject>(MB + n + "_PLACEHOLDER.asset");
-            var airSup = new UnityEngine.Object[] { w.gunMount, null, w.r27Mount, w.r73Mount, w.r73OuterMount, null };
+            // MiG-29SMT: the R-77 replaces the R-27R as the main missile (four R-77 on the inner and middle pylons, R-73 outboard)
+            var airSup = new UnityEngine.Object[] { w.gunMount, null, w.r77Mount, w.r77Mount, w.r73OuterMount, null };
             var presets = new (string name, float fuel, UnityEngine.Object[] weapons)[]
             {
-                ("Air Superiority (R-27R / R-73)", 0.8f, airSup),
-                ("Long-Range CAP (PTB-1500 / R-27R / R-73)", 1.0f, new UnityEngine.Object[] { w.gunMount, w.ptb1500Mount, w.r27Mount, w.r73Mount, w.r73OuterMount, null }),
+                ("Air Superiority (R-77 / R-73)", 0.8f, airSup),
+                ("Long-Range CAP (PTB-1500 / R-77 / R-73)", 1.0f, new UnityEngine.Object[] { w.gunMount, w.ptb1500Mount, w.r77Mount, w.r77Mount, w.r73OuterMount, null }),
+                ("Mixed (R-27R / R-77 / R-73)", 0.8f, new UnityEngine.Object[] { w.gunMount, null, w.r27Mount, w.r77Mount, w.r73OuterMount, null }),
                 ("Dogfight (R-27T / R-73 / R-60M)", 0.6f, new UnityEngine.Object[] { w.gunMount, null, w.r27tMount, w.r73Mount, w.r60OuterMount, null }),
                 ("Strike (FAB-500 / rockets / R-73)", 0.7f, new UnityEngine.Object[] { w.gunMount, null, Stock("bomb_500_single"), Stock("Rocket2_4Pod"), w.r73OuterMount, null }),
                 ("Ferry (3 drop tanks / R-73)", 1.0f, new UnityEngine.Object[] { w.gunMount, w.ptb1500Mount, w.ptb1150Mount, w.r73Mount, null, null }),
