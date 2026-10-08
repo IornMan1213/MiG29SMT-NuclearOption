@@ -4,20 +4,20 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace MiG29Tools
+namespace MiG29SMTTools
 {
-    // From-scratch RD-33 exhaust nozzles (tools/nozzle_gen.py -> MiG29Source/nozzles.json). The MiG model's own nozzle cans are
+    // From-scratch RD-33 exhaust nozzles (tools/nozzle_gen.py -> MiG29SMTSource/nozzles.json). The MiG model's own nozzle cans are
     // low-poly and lumpy: their triangles are stripped from the airframe and replaced, per engine, by
     //   MiG29_nozzle_<L|R>                 frame on the engine axis at the nacelle seam (+z forward, toes out/down ~2 deg like the model)
     //     MiG29_nozstatic_<L|R>            duct, throat ring, root band, afterburner flame holders, turbine cone
     //     MiG29_noz_<L|R>_<flap|seal|inner>_<i>   one hinged petal each (16 flaps, 16 seals, 16 inner petals)
-    // The MiG29Instruments plugin (NozzleDriver) opens and closes the petals with the engine like the real convergent-divergent
+    // The MiG29SMTInstruments plugin (NozzleDriver) opens and closes the petals with the engine like the real convergent-divergent
     // nozzle; without it they rest at the as-built opening. Petal pose: localRotation = AngleAxis(phi, forward) * Euler(theta, 0, 0).
     public static class MiG29Nozzles
     {
-        const string ModDir = "Assets/Blueprinter/Mods/mig29";
+        const string ModDir = "Assets/Blueprinter/Mods/mig29smt";
         const string Dir = ModDir + "/nozzles";
-        const string SourceDir = "MiG29Source";
+        const string SourceDir = "MiG29SMTSource";
 
         [Serializable] class PartDump { public string name; public float[] vertices, normals, uvs; public int[] triangles; }
         [Serializable] class Layout { public float[] axis_root, axis_end; public int count; public float r_root, l_flap, seal_inset, z_throat, r_throat, l_inner, exit_rest; }

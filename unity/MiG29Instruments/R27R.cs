@@ -1,7 +1,7 @@
 using HarmonyLib;
 using UnityEngine;
 
-namespace MiG29Instruments
+namespace MiG29SMTInstruments
 {
     // R-27R fired with no target. The game lets a missile launch with an empty target list (WeaponManager.Fire passes target null),
     // and SARHSeeker.Seek detonates a missile that has no target as soon as its warhead is armed. On the SAM it was made for that is
@@ -18,7 +18,7 @@ namespace MiG29Instruments
         static bool Prefix(SARHSeeker __instance)
         {
             var m = MissileOf(__instance);
-            if (m == null || !m.name.StartsWith("mig29_R27R") || TargetOf(__instance) != null) return true;
+            if (m == null || !m.name.StartsWith("mig29smt_R27R") || TargetOf(__instance) != null) return true;
             if (!m.IsArmed() && m.timeSinceSpawn > ArmDelay) m.Arm();
             m.SetAimpoint(m.GlobalPosition() + m.transform.forward * 10000f, Vector3.zero);
             return false;

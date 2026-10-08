@@ -5,13 +5,13 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 
-namespace MiG29Tools
+namespace MiG29SMTTools
 {
     // Dumps the built MiG-29 prefab's flight-relevant data (per aero part: mass, physics centre of mass as PhysX computes
-    // it from the part's collider, lift settings, MiG skin planform/side area) to MiG29Out/aero.json for tools/fm_sim.py.
+    // it from the part's collider, lift settings, MiG skin planform/side area) to MiG29SMTOut/aero.json for tools/fm_sim.py.
     public static class MiG29AeroDump
     {
-        const string PrefabPath = "Assets/Blueprinter/Mods/mig29/MiG29.prefab";
+        const string PrefabPath = "Assets/Blueprinter/Mods/mig29smt/MiG29SMT.prefab";
 
         static Type T(string n) => AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name == "Assembly-CSharp").Select(a => a.GetType(n)).First(t => t != null);
         static string V(Vector3 v) => $"[{v.x:F4},{v.y:F4},{v.z:F4}]";
@@ -74,8 +74,8 @@ namespace MiG29Tools
                 sb.Append($"{{\"pos\":{V(n.position)},\"fwd\":{V(n.forward)}}}");
             }
             sb.Append("]}\n");
-            Directory.CreateDirectory("MiG29Out");
-            File.WriteAllText("MiG29Out/aero.json", sb.ToString());
+            Directory.CreateDirectory("MiG29SMTOut");
+            File.WriteAllText("MiG29SMTOut/aero.json", sb.ToString());
             Debug.Log("[MiG29] aero dump written");
             UnityEngine.Object.DestroyImmediate(go);
         }

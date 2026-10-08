@@ -1,6 +1,6 @@
-"""Turn the Sketchfab model's 4K textures into the mod's 2K set in <project>/MiG29Source.
+"""Turn the Sketchfab model's 4K textures into the mod's 2K set in <project>/MiG29SMTSource.
 
-python tools/prepare_textures.py <sketchfab textures dir> <project>/MiG29Source
+python tools/prepare_textures.py <sketchfab textures dir> <project>/MiG29SMTSource
 
 Writes mig29_basecolor.png, mig29_normal.png, mig29_metallic.png (game convention: RGB = metal, A = 1 - roughness),
 mig29_basecolor_dmg.png (procedural scorch for destroyed parts) and copies the loading screens from assets/loading.

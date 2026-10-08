@@ -1,6 +1,7 @@
-"""From-scratch MiG-29 (9.12) cockpit, modelled procedurally and fitted inside the MiG airframe.
+"""From-scratch MiG-29SMT (9.19) cockpit, modelled procedurally and fitted inside the MiG airframe: the 9.12's tub, consoles and
+seat with the SMT's glass panel (two colour MFDs, up-front control panel, standby instruments).
 
-blender -b --python blender/cockpit_build.py -- <MiG29Source dir> [<preview out dir>]
+blender -b --python blender/cockpit_build.py -- <MiG29SMTSource dir> [<preview out dir>]
   reads  mig29_mesh.json (airframe, for fitting), cockpit_atlas.json (texture cells from tools/cockpit_atlas.py)
   writes cockpit_mesh.json: parts in the Unity MiG frame (same layout as mig29_mesh.json parts)
      tub      static interior: tub walls, floor, consoles, instrument panel + instruments, glareshield, HUD body, pedals, decks
@@ -8,7 +9,8 @@ blender -b --python blender/cockpit_build.py -- <MiG29Source dir> [<preview out 
      seat     ejection seat, rides on the game's EjectionSeat     (pivot = seat origin)
      stick    centre stick, on the game's joystick transform       (pivot = stick base)
      throttle throttle levers, on the game's throttle transform    (pivot = lever axle)
-     screen   radar/tactical display quad, on the game's tacScreen (UVs = the tac screen render texture's main area)
+     screen   right MFD: the game's tactical display, on the game's tacScreen (UVs = the middle of its render texture's main area)
+     pfd      left MFD's screen quad (the plugin draws the flight display on it)
      lamps    master warning lamps, on the game's warningLights    (UVs = the stock warning-light texture cells)
      frames   the MiG model's own windscreen bow, canopy sills and mirrors (MiG skin UVs)
   and preview renders (Eevee) when an output dir is given.
@@ -642,10 +644,66 @@ def plate(u, v, w, h, cell, off=0.003, yaw_side=1):
     return cs_
 
 
-# centre section (MiG-29 9.12 style T layout)
-# attitude indicator: a real ball behind a black mask with the bank scale, fixed orange aircraft symbol in front
-f = gauge(0.0, 0.245, 0.112, "g_adi", face_z=0.0012)
-BALL_R, BALL_BACK = 0.10, 0.087
+# centre section (MiG-29SMT 9.19): two MFI-10-6M colour displays side by side, portrait, each in a bezel with push buttons down
+# its sides and along the top and bottom; the up-front control panel (PUI) above them under the HUD. The left display is the
+# flight display (drawn by the MiG29SMTInstruments plugin on the "pfd" quad), the right one shows the game's tactical display.
+MFD_U, MFD_V = 0.0975, 0.125
+MFD_SW, MFD_SH = 0.130, 0.174          # screen, 3:4 portrait (6 x 8 in class)
+MFD_BW, MFD_BH = 0.172, 0.222          # bezel
+
+
+def slab(c, n, right, up, w, h, depth, paint, side_paint="black"):
+    """A block standing proud of the panel face in the panel's own frame: front face at c + n * depth, sides back to c."""
+    fr = [c + n * depth - right * w / 2 - up * h / 2, c + n * depth + right * w / 2 - up * h / 2,
+          c + n * depth + right * w / 2 + up * h / 2, c + n * depth - right * w / 2 + up * h / 2]
+    bk = [p - n * depth for p in fr]
+    poly_paint("tub", [tuple(p) for p in fr], paint)
+    for i in range(4):
+        poly_paint("tub", [tuple(fr[(i + 1) % 4]), tuple(fr[i]), tuple(bk[i]), tuple(bk[(i + 1) % 4])], side_paint)
+
+
+def mfd_bezel(u, v):
+    c, n, right, up = panel_frame(u, v, 0.0)
+    slab(c, n, right, up, MFD_BW, MFD_BH, 0.016, "black")
+    flat("tub", c + n * 0.0163, right, up, MFD_SW + 0.008, MFD_SH + 0.008, "dgrey")      # screen surround
+    # push buttons: 5 down each side, 4 along the top and the bottom
+    for k in range(5):
+        for s in (-1, 1):
+            slab(c + n * 0.016 + right * s * (MFD_BW / 2 - 0.0095) + up * (k - 2) * 0.034, n, right, up, 0.009, 0.011, 0.004, "dgrey")
+    for k in range(4):
+        for s in (-1, 1):
+            slab(c + n * 0.016 + right * (k - 1.5) * 0.030 + up * s * (MFD_BH / 2 - 0.0095), n, right, up, 0.011, 0.009, 0.004, "dgrey")
+    return c + n * 0.0167, right, up
+
+
+def screen_quad(pid, c, right, up, uvrect):
+    q = [c - right * MFD_SW / 2 - up * MFD_SH / 2, c + right * MFD_SW / 2 - up * MFD_SH / 2,
+         c + right * MFD_SW / 2 + up * MFD_SH / 2, c - right * MFD_SW / 2 + up * MFD_SH / 2]
+    quad_uv(part(pid), [tuple(x) for x in q], uvrect)
+
+
+# left: flight display. Static UVs on a black atlas cell (a dark screen without the plugin); the plugin re-maps them to its own
+# 0..1 texture.
+pc, pr, pu = mfd_bezel(-MFD_U, MFD_V)
+screen_quad("pfd", pc, pr, pu, rect_uv("paint_black", 6))
+# right: the game's tactical display. Its render texture's main area (u 0..0.75, v 0.25..1) is 2.1:1; the middle 3:4 of it fills
+# the portrait screen
+tc, tr_, tu = mfd_bezel(MFD_U, MFD_V)
+_w = 0.75 * (MFD_SW / MFD_SH) / 2.1
+screen_quad("screen", tc, tr_, tu, (0.375 - _w / 2, 0.25, 0.375 + _w / 2, 1.0))
+
+# up-front control panel: a keypad either side of a small data window
+c, n, right, up = panel_frame(0.0, 0.283, 0.0)
+slab(c, n, right, up, 0.25, 0.066, 0.014, "dgrey")
+flat("tub", c + n * 0.0143, right, up, 0.080, 0.028, "black")                     # data window
+for row in range(2):
+    for col in range(4):
+        for s in (-1, 1):
+            slab(c + n * 0.014 + right * s * (0.058 + col * 0.016) + up * (0.012 - row * 0.022), n, right, up, 0.012, 0.013, 0.004, "black", "dgrey")
+
+# standby attitude ball (right wing, where the 9.12's radar screen was): the 9.12's ball at two thirds the size
+f = gauge(0.27, 0.240, 0.075, "g_adi", face_z=0.0012)   # low and inboard enough that the ball behind it stays inside the panel
+BALL_R, BALL_BACK = 0.067, 0.058
 ball_c = f["c"] - f["n"] * BALL_BACK
 bu0, bv0, bu1, bv1 = rect_uv("adi_ball", 1.0)
 pid = part("ins_adi_ball"); NLON, NLAT = 36, 30
@@ -659,30 +717,14 @@ for i in range(NLON):
         PARTS[pid].face([P(*x[0]) for x in q], [x[1] for x in q])
 INS["ins_adi_ball"] = (ball_c, f["n"], f["up"])
 sym = f["c"] + f["n"] * 0.0138
+k_ = 0.67
 for sx in (-1, 1):
-    flat("tub", sym + f["right"] * sx * 0.026, f["right"], f["up"], 0.026, 0.0032, "amber")
-flat("tub", sym, f["right"], f["up"], 0.006, 0.006, "amber")
-flat("tub", sym - f["up"] * 0.006, f["right"], f["up"], 0.0025, 0.009, "amber")
+    flat("tub", sym + f["right"] * sx * 0.026 * k_, f["right"], f["up"], 0.026 * k_, 0.0032 * k_, "amber")
+flat("tub", sym, f["right"], f["up"], 0.006 * k_, 0.006 * k_, "amber")
+flat("tub", sym - f["up"] * 0.006 * k_, f["right"], f["up"], 0.0025 * k_, 0.009 * k_, "amber")
 
-# HSI: the compass card turns with the heading; lubber line and aircraft symbol are fixed
-f = gauge(0.0, 0.110, 0.104, "g_hsi", face_part=part("ins_hsi_card"))
-INS["ins_hsi_card"] = (f["c"] + f["n"] * 0.010, f["n"], f["up"])
-top = f["c"] + f["n"] * 0.0125 + f["up"] * f["r"] * 0.97
-PARTS["tub"].face([P(*top), P(*(top + f["up"] * 0.0001 - f["right"] * 0.004 + f["up"] * 0.006)), P(*(top + f["right"] * 0.004 + f["up"] * 0.006))][::-1],
-                  [((rect_uv("paint_white")[0] + rect_uv("paint_white")[2]) / 2, (rect_uv("paint_white")[1] + rect_uv("paint_white")[3]) / 2)] * 3)
-hs = f["c"] + f["n"] * 0.0125
-flat("tub", hs, f["right"], f["up"], 0.022, 0.0025, "white")
-flat("tub", hs - f["up"] * 0.003, f["right"], f["up"], 0.0025, 0.020, "white")
-flat("tub", hs - f["up"] * 0.012, f["right"], f["up"], 0.010, 0.0022, "white")
-
-f = gauge(-0.125, 0.268, 0.080, "g_asi"); needle("asi_kmh", f, 0.86, 0.09); needle("asi_mach", f, 0.40, 0.08, "yellow", z=0.0122)
-f = gauge(-0.125, 0.165, 0.080, "g_alt"); needle("alt_km", f, 0.52, 0.15); needle("alt_m", f, 0.88, 0.08, z=0.0122)
-f = gauge(0.125, 0.268, 0.080, "g_aoa"); needle("aoa", f, 0.86, 0.08, "yellow"); needle("g", f, 0.86, 0.08, z=0.0122)
-f = gauge(0.125, 0.165, 0.080, "g_vsi"); needle("vsi", f, 0.88, 0.09)
-f = gauge(-0.13, 0.065, 0.058, "g_radalt"); needle("radalt", f, 0.84, 0.10)
-f = gauge(0.13, 0.065, 0.058, "g_clock"); needle("clock_h", f, 0.50, 0.14); needle("clock_m", f, 0.82, 0.08, z=0.0120); needle("clock_s", f, 0.88, 0.035, "red", z=0.0126)
-plate(0.0, PH - 0.018, 0.16, 0.026, "placard")
-GL_U, GL_V = -0.178, 0.040
+# gear lever: left of the displays, between them and the gear lights
+GL_U, GL_V = -0.218, 0.170
 c, n, right, up = panel_frame(GL_U, GL_V, 0.0)
 flat("tub", c + n * 0.003, right, up, 0.03, 0.06, "black")                       # lever plate
 flat("tub", c + n * 0.0035, right, up, 0.006, 0.045, "rubber")                    # slot
@@ -710,9 +752,10 @@ for gid, x, y, sz in ATLAS["layout"]["gear"]:
     gu, gv = GEAR_U + (x - 0.5) * GW, GEAR_V + (0.5 - y) * GH
     lamp(f"gear_{gid}_g", gu, gv, sz * GW * 0.95, sz * GW * 0.95, rect_uv("lamp_lit_green", 6), 0.0040)
     lamp(f"gear_{gid}_r", gu, gv, sz * GW * 0.95, sz * GW * 0.95, rect_uv("lamp_lit_red", 6), 0.0042)
-f = gauge(-0.255, 0.075, 0.05, "g_oxy"); needle("oxy", f, 0.84, 0.11)
-f = gauge(-0.325, 0.075, 0.05, "g_cabin"); needle("cabin", f, 0.84, 0.11)
-# right wing: radar / tactical display, engine instruments, caution panel
+# standby airspeed and altimeter (the 9.12's dials, small)
+f = gauge(-0.255, 0.075, 0.054, "g_asi"); needle("asi_kmh", f, 0.86, 0.10)
+f = gauge(-0.325, 0.075, 0.054, "g_alt"); needle("alt_km", f, 0.52, 0.16); needle("alt_m", f, 0.88, 0.09, z=0.0122)
+# right wing: standby attitude ball (above), engine instruments, caution panel
 f = gauge(0.255, 0.165, 0.062, "g_rpm"); needle("rpm_l", f, 0.86, 0.09); needle("rpm_r", f, 0.72, 0.09, "yellow", z=0.0122)
 f = gauge(0.33, 0.165, 0.062, "g_egt"); needle("egt_l", f, 0.86, 0.09); needle("egt_r", f, 0.72, 0.09, "yellow", z=0.0122)
 f = gauge(0.255, 0.091, 0.05, "g_fuel"); needle("fuel", f, 0.84, 0.11)
@@ -733,21 +776,12 @@ def strip(u0, v0, u1, v1, w=0.008, off=0.004):
     poly_paint("tub", [tuple(a - side), tuple(b - side), tuple(b + side), tuple(a + side)][::-1], "black")
 for (u0, v0, u1, v1) in ((-0.2, 0.003, 0.2, 0.003), (-0.2, PH - 0.004, 0.2, PH - 0.004), (-0.197, 0.0, -0.197, PH), (0.197, 0.0, 0.197, PH)):
     strip(u0, v0, u1, v1)
-for (u, v) in ((-0.185, 0.015), (0.185, 0.015), (-0.185, PH - 0.035), (0.185, PH - 0.035), (-0.27, 0.33), (0.27, 0.33), (-0.32, 0.055), (0.32, 0.055)):
+for (u, v) in ((-0.19, 0.009), (0.19, 0.009), (-0.185, PH - 0.035), (0.185, PH - 0.035), (-0.27, 0.33), (0.27, 0.33), (-0.32, 0.03), (0.32, 0.12)):
     c = Vector(pp(u, v, 0.002, 1)); cylinder("tub", tuple(c), tuple(panel_normal(u)), 0.004, 0.004, "metal", 8)
-for (u, v) in ((-0.078, 0.14), (0.078, 0.14), (-0.172, 0.20), (0.172, 0.20), (-0.06, 0.03), (0.06, 0.03)):
+for (u, v) in ((-0.165, 0.283), (0.165, 0.283), (-0.215, 0.07)):   # setting knobs either side of the control panel, light dimmer
     n = panel_normal(u); c = Vector(pp(u, v, 0.0, 1))
     cylinder("tub", tuple(c + n * 0.009), tuple(n), 0.0075, 0.018, "black", 12)
     cylinder("tub", tuple(c + n * 0.019), tuple(n), 0.0055, 0.004, "dgrey", 12)
-
-# tac screen: bezel plate + the screen quad (the game's render texture, main area u 0-0.75 v 0.25-1, 2.1:1)
-SW, SH = 0.165, 0.079
-sc = plate(0.29, 0.262, SW + 0.026, SH + 0.034, "radar_frame", off=0.004)
-cu, cvv = 0.29, 0.262
-corners = [pp(cu - SW / 2, cvv - SH / 2, 0.006, 1), pp(cu + SW / 2, cvv - SH / 2, 0.006, 1), pp(cu + SW / 2, cvv + SH / 2, 0.006, 1), pp(cu - SW / 2, cvv + SH / 2, 0.006, 1)]
-quad_uv("screen", corners, (0.0, 0.25, 0.75, 1.0))
-# hood around the screen
-c = Vector(pp(cu, cvv, 0)); n = panel_normal(cu)
 
 # ------------------------------------------------------------------------------------------------ glareshield + HUD
 GS_Y = PT + 0.012
@@ -1143,7 +1177,7 @@ def export_part(part, sign, material, pivot=None):
 sign = winding_sign()
 parts_out, meshes = [], {}
 for name, mat, pivot in (("tub", "cockpit", None), ("glass", "glass", None), ("seat", "cockpit", SEAT_O), ("stick", "cockpit", STICK_O),
-                         ("throttle", "cockpit", THR_O), ("screen", "screen", None), ("lamps", "lamps", None)):
+                         ("throttle", "cockpit", THR_O), ("screen", "screen", None), ("lamps", "lamps", None), ("pfd", "cockpit", None)):
     o, me = export_part(PARTS[name], sign, mat, pivot)
     parts_out.append(o); meshes[name] = me
 for name in sorted(k for k in PARTS if k.startswith("ins_") or k.startswith("lamp_")):

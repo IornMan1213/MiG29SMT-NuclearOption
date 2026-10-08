@@ -1,6 +1,6 @@
 """Two-stage main-gear retraction path for the plugin's GearPathDriver: fold + twist first (with translation T1, chosen so the leg
 rises through the bay opening without cutting the skin), then slide into the stow (main_gear_search.json). Prints the skin clipping
-along candidate paths. python main_gear_path.py <MiG29Source> <MiG29Out>"""
+along candidate paths. python main_gear_path.py <MiG29SMTSource> <MiG29SMTOut>"""
 import json, os, sys
 import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tools"))

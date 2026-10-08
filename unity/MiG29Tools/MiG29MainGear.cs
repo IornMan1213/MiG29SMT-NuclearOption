@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace MiG29Tools
+namespace MiG29SMTTools
 {
     // MiG-29 main landing gear, built to move like the real one (user's War Thunder reference, v0.9.0): the leg swings forward and
     // up beside the intake trunk with the wheel edge-on, then the wheel turns flat and goes in through a door at the top of the
@@ -16,15 +16,15 @@ namespace MiG29Tools
     //    single skewed-hinge arc to the stow (blender/analysis/main_gear_search2.py: every leg vertex >= 5 cm inside the skin,
     //    unsprung at rest and fully extended). The hinge itself keeps an identity local rotation: LandingGear.MoveGear starts
     //    from the angle between the hinge's and its parent's forward vectors.
-    //  - Path: the MiG29Instruments plugin (GearPath.cs) steers the legs through the bay openings (main_gear_path3.py); without
+    //  - Path: the MiG29SMTInstruments plugin (GearPath.cs) steers the legs through the bay openings (main_gear_path3.py); without
     //    the plugin the game's straight arc still ends fully hidden.
     //  - Doors: the model has no door for that last step, so tools/main_bay_door.py cuts one out of the trunk skin.
     public static class MiG29MainGear
     {
-        const string ModDir = "Assets/Blueprinter/Mods/mig29";
-        const string SourceDir = "MiG29Source";
+        const string ModDir = "Assets/Blueprinter/Mods/mig29smt";
+        const string SourceDir = "MiG29SMTSource";
 
-        // left leg; the right leg mirrors it. Keep in step with MiG29Instruments/GearPath.cs.
+        // left leg; the right leg mirrors it. Keep in step with MiG29SMTInstruments/GearPath.cs.
         public const float StowYaw = 25f, StowFold = -76f, StowStrut = 135f;
 
         [Serializable] class Piece { public string name; public float[] vertices, normals, uvs; public int[] triangles; }

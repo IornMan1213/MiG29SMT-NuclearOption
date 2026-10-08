@@ -5,16 +5,16 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace MiG29Tools
+namespace MiG29SMTTools
 {
-    // The MiG-29 cockpit, modelled from scratch: blender/cockpit_build.py writes MiG29Source/cockpit_mesh.json (MiG frame),
+    // The MiG-29 cockpit, modelled from scratch: blender/cockpit_build.py writes MiG29SMTSource/cockpit_mesh.json (MiG frame),
     // tools/cockpit_atlas.py draws its texture. Static interior pieces become their own renderers, visible from inside and outside.
     // The parts the game drives keep the stock objects and only get new meshes: stick -> joystick, throttle levers -> throttle,
     // display -> tacScreen (tactical render texture), master warning lamps -> warningLights, seat -> EjectionSeat.
     public static class MiG29Cockpit
     {
-        const string ModDir = "Assets/Blueprinter/Mods/mig29";
-        const string SourceDir = "MiG29Source";
+        const string ModDir = "Assets/Blueprinter/Mods/mig29smt";
+        const string SourceDir = "MiG29SMTSource";
 
         // The stock pilot sat ~0.2 m forward of the MiG seat position (eye 0.4 m behind the windscreen bow); this puts the head
         // against the new headrest. cockpitViewPoint (the pilot's helmetCamPoint) moves with it.
@@ -59,12 +59,23 @@ namespace MiG29Tools
             Attach(root, "EjectionSeat", parts["seat"], modelOffset, mat, save, movePivot: false);
             Attach(root, "tacScreen", parts["screen"], modelOffset, null, save, movePivot: false);
             Attach(root, "warningLights", parts["lamps"], modelOffset, null, save, movePivot: false);
+            // left MFD screen: the MiG29SMTInstruments plugin draws the flight display on it (PfdDriver); a dark screen without it
+            if (parts.TryGetValue("pfd", out var pfd))
+            {
+                var mesh = (Mesh)save(MakeMesh(pfd, v => v + modelOffset, n => n, "MiG29_ck_pfd"), $"{ModDir}/meshes/MiG29_ck_pfd.asset");
+                var o = new GameObject("MiG29_ck_pfd");
+                o.transform.SetParent(cockpitPart, false);
+                o.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+                o.AddComponent<MeshFilter>().sharedMesh = mesh;
+                var r = o.AddComponent<MeshRenderer>(); r.sharedMaterial = mat;
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
             BuildInstruments(cockpitPart, parts.Values, modelOffset, mat, save);
             // The cockpit view draws the interior on the stock interior's layer with its own near-clip camera; anything on the default
             // layer closer than ~1 m to the eye is clipped away. Everything new in the cockpit goes on that layer.
             int layer = root.GetComponentsInChildren<Transform>(true).First(t => t.name == "cockpit_int").gameObject.layer;
             int moved = 0;
-            foreach (var t in cockpitPart.GetComponentsInChildren<Transform>(true).Where(t => t.name.StartsWith("MiG29_ck_") || t.name.StartsWith("MiG29_ins_") || t.name.StartsWith("MiG29_lamp_") || t.name == "needle" || t.name.StartsWith("NOMirror_")))
+            foreach (var t in cockpitPart.GetComponentsInChildren<Transform>(true).Where(t => t.name.StartsWith("MiG29_ck_") || t.name.StartsWith("SMT_ins_") || t.name.StartsWith("SMT_lamp_") || t.name == "needle" || t.name.StartsWith("NOMirror_")))
             { t.gameObject.layer = layer; moved++; }
             // The main (outside) camera does not draw that layer: an exterior copy of the interior on the default layer, which the
             // game hides in the cockpit view (exterior renderer), keeps the cockpit visible through the canopy from outside.
@@ -91,8 +102,8 @@ namespace MiG29Tools
             Debug.Log($"[MiG29] cockpit: from-scratch interior ({parts["tub"].triangles.Length / 3} tris), {glassCount} MiG glass renderers in both views, {hidden} KR-67 interior meshes hidden");
         }
 
-        // Moving instrument parts (ins_*): a fixed mount "MiG29_ins_<id>" (z into the panel, y up) with a child "needle" that the
-        // MiG29Instruments plugin turns; posed here at the engine-off reading. Lamps (lamp_*): "MiG29_lamp_<id>", off until the plugin
+        // Moving instrument parts (ins_*): a fixed mount "SMT_ins_<id>" (z into the panel, y up) with a child "needle" that the
+        // MiG29SMTInstruments plugin turns; posed here at the engine-off reading. Lamps (lamp_*): "SMT_lamp_<id>", off until the plugin
         // lights them.
         static void BuildInstruments(Transform cockpitPart, IEnumerable<Part> parts, Vector3 modelOffset, Material mat, Func<UnityEngine.Object, string, UnityEngine.Object> save)
         {
@@ -102,7 +113,7 @@ namespace MiG29Tools
             {
                 if (p.name.StartsWith("ins_"))
                 {
-                    var mount = new GameObject("MiG29_" + p.name).transform;
+                    var mount = new GameObject("SMT_" + p.name).transform;
                     mount.SetParent(cockpitPart, false);
                     var axis = new Vector3(p.axis[0], p.axis[1], p.axis[2]); var up = new Vector3(p.up[0], p.up[1], p.up[2]);
                     mount.SetPositionAndRotation(new Vector3(p.pivot[0], p.pivot[1], p.pivot[2]) + modelOffset, Quaternion.LookRotation(-axis, up));
@@ -128,7 +139,7 @@ namespace MiG29Tools
                 }
                 else if (p.name.StartsWith("lamp_"))
                 {
-                    var o = new GameObject("MiG29_" + p.name);
+                    var o = new GameObject("SMT_" + p.name);
                     o.transform.SetParent(cockpitPart, false);
                     o.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
                     var mesh = (Mesh)save(MakeMesh(p, v => v + modelOffset, n => n, "MiG29_ck_" + p.name), $"{ModDir}/meshes/MiG29_ck_{p.name}.asset");

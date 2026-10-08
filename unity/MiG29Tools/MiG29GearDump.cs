@@ -6,14 +6,14 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 
-namespace MiG29Tools
+namespace MiG29SMTTools
 {
     // Dev check: poses the built prefab's landing gear exactly as LandingGear.MoveGear animates it (hinge fold, hinge fold motion,
-    // strut rotation, moving parts, door euler lerp) and writes every visible mesh, MiG frame, per pose to MiG29Out/gear_<pose>.json
+    // strut rotation, moving parts, door euler lerp) and writes every visible mesh, MiG frame, per pose to MiG29SMTOut/gear_<pose>.json
     // for blender/analysis/gear_look.py. Also logs each leg's serialized fold settings.
     public static class MiG29GearDump
     {
-        const string PrefabPath = "Assets/Blueprinter/Mods/mig29/MiG29.prefab";
+        const string PrefabPath = "Assets/Blueprinter/Mods/mig29smt/MiG29SMT.prefab";
         static readonly Vector3 ModelOffset = new Vector3(0f, -0.44f, -2.655f);
 
         static Type T(string n) => AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name == "Assembly-CSharp").Select(a => a.GetType(n)).First(t => t != null);
@@ -22,7 +22,7 @@ namespace MiG29Tools
         {
             try
             {
-                Directory.CreateDirectory("MiG29Out");
+                Directory.CreateDirectory("MiG29SMTOut");
                 // pose: gear fold fraction, door open fraction (doors snap to localEulerAngles zero once retracted)
                 foreach (var (pose, fold, door) in new[] { ("down", 0f, 1f), ("q1", 0.25f, 1f), ("mid", 0.5f, 1f), ("q3", 0.75f, 1f), ("up", 1f, -1f), ("doorhalf", 0f, 0.5f) })
                     Dump(pose, fold, door, pose == "down");
@@ -140,7 +140,7 @@ namespace MiG29Tools
                 js.Append("],\"t\":[").Append(string.Join(",", mesh.triangles)).Append("]}");
             }
             js.Append("]}");
-            File.WriteAllText($"MiG29Out/gear_{pose}.json", js.ToString());
+            File.WriteAllText($"MiG29SMTOut/gear_{pose}.json", js.ToString());
             Debug.Log($"[MiG29] gear dump {pose} written");
             UnityEngine.Object.DestroyImmediate(go);
         }

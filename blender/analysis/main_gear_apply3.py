@@ -1,5 +1,5 @@
 ﻿"""gear_new3_<pose>.json for gear_look.py: main legs posed along the plugin path of main_gear_path2.json (or the game's straight arc
-with STRAIGHT=1), unsprung extended as in flight. python main_gear_apply3.py <MiG29Source> <MiG29Out>  env: TS="0,0.2,..." """
+with STRAIGHT=1), unsprung extended as in flight. python main_gear_apply3.py <MiG29SMTSource> <MiG29SMTOut>  env: TS="0,0.2,..." """
 import json, os, sys
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

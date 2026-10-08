@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace MiG29Instruments
+namespace MiG29SMTInstruments
 {
-    // Opens and closes the MiG-29's RD-33 nozzles (MiG29Tools/MiG29Nozzles.cs builds them: hinged petals named
+    // Opens and closes the MiG-29's RD-33 nozzles (MiG29SMTTools/MiG29Nozzles.cs builds them: hinged petals named
     // MiG29_noz_<L|R>_<flap|seal|inner>_<i>) like the real convergent-divergent nozzle: open with the engine off, partly closed at
     // idle, closed down at full military power, wide open in afterburner. Visual only; runs for every MiG, player or AI.
     public class NozzleDriver : MonoBehaviour

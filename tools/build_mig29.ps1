@@ -20,13 +20,13 @@ function Invoke-Unity([string[]]$extra, [string]$log) {
 }
 
 # 0a. Sync the editor scripts from this repo into the Unity project (the repo is the source of truth).
-$dst = Join-Path $Project "Assets\Editor\MiG29Tools"
+$dst = Join-Path $Project "Assets\Editor\MiG29SMTTools"
 New-Item -ItemType Directory -Force $dst | Out-Null
 Copy-Item (Join-Path (Split-Path $PSScriptRoot) "unity\MiG29Tools\*.cs") $dst -Force
 
 # 0b. Generated sources: missile/launcher models, the flight-model export and the livery textures.
 $tools = $PSScriptRoot
-$src = "$Project\MiG29Source"
+$src = "$Project\MiG29SMTSource"
 Push-Location (Split-Path $tools)
 python "$tools\missile_gen.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "missile_gen failed" }
 python "$tools\nozzle_gen.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "nozzle_gen failed" }
@@ -35,6 +35,7 @@ python "$tools\gear_wells.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "gear_wel
 python "$tools\main_gear_gen.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "main_gear_gen failed" }
 python "$tools\main_bay_door.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "main_bay_door failed" }
 python "$tools\airbrake_cut.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "airbrake_cut failed" }
+python "$tools\smt_hump.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "smt_hump failed" }
 python "$tools\main_wells.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "main_wells failed" }
 python "$tools\bay_texture.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "bay_texture failed" }
 python "$tools\fm_export.py" "$src\fm_unity.json"; if ($LASTEXITCODE -ne 0) { throw "fm_export failed" }
@@ -58,8 +59,8 @@ Pop-Location
 # 1. Compile pass. Blueprinter keeps the game's Assembly-CSharp in ScriptAssemblies read-only, which makes
 #    batchmode compilation fail; clear it so the project compiles.
 foreach ($f in $dlls) { $d = Join-Path $sa $f; if (Test-Path $d) { Set-ItemProperty $d IsReadOnly $false } }
-$code = Invoke-Unity @('-quit') (Join-Path $Project "MiG29Out_compile.log")
-if ($code -ne 0) { throw "compile pass failed ($code), see MiG29Out_compile.log" }
+$code = Invoke-Unity @('-quit') (Join-Path $Project "MiG29SMTOut_compile.log")
+if ($code -ne 0) { throw "compile pass failed ($code), see MiG29SMTOut_compile.log" }
 
 # 2. Re-do Blueprinter's GameAssemblySync (its delayCall never runs in batchmode): game DLLs back, read-only.
 foreach ($f in $dlls) {
@@ -70,10 +71,10 @@ foreach ($f in $dlls) {
 }
 
 # 3. Build pass.
-$env:MIG29_OUT = Join-Path $Project "MiG29Build"
+$env:MIG29_OUT = Join-Path $Project "MiG29SMTBuild"
 Remove-Item "$env:MIG29_OUT\*.nobp" -ErrorAction SilentlyContinue
-$log = Join-Path $Project "MiG29Out_build.log"
-$code = Invoke-Unity @('-executeMethod', 'MiG29Tools.MiG29Builder.BuildAll') $log
+$log = Join-Path $Project "MiG29SMTOut_build.log"
+$code = Invoke-Unity @('-executeMethod', 'MiG29SMTTools.MiG29Builder.BuildAll') $log
 Select-String -Path $log -Pattern '\[MiG29\]|\[Blueprinter\]|error CS|Exception' | Where-Object { $_.Line -notmatch 'Licensing' } | ForEach-Object { $_.Line }
 Get-ChildItem $env:MIG29_OUT -Filter *.nobp | ForEach-Object { "OUTPUT $($_.FullName) $($_.Length)" }
 
@@ -83,15 +84,15 @@ $plugin = Join-Path $repo "unity\MiG29Instruments"
 # one version for the mod and the plugin: mod managers (NOMNOM / NOMM) match the release version against the DLL's
 $ver = [regex]::Match((Get-Content (Join-Path $repo "unity\MiG29Tools\MiG29Builder.cs") -Raw), 'Version = "([\d.]+)"').Groups[1].Value
 if (-not (Select-String -Path "$plugin\Plugin.cs" -SimpleMatch "ModVersion = `"$ver`"" -Quiet)) { throw "Plugin.cs ModVersion must be $ver (MiG29Builder.Version)" }
-dotnet build "$plugin\MiG29Instruments.csproj" -c Release -o "$env:MIG29_OUT" -nologo -v q "-p:Version=$ver" | Select-String "error|Warn" | ForEach-Object { $_.Line }
+dotnet build "$plugin\MiG29SMTInstruments.csproj" -c Release -o "$env:MIG29_OUT" -nologo -v q "-p:Version=$ver" | Select-String "error|Warn" | ForEach-Object { $_.Line }
 if ($LASTEXITCODE -ne 0) { throw "instruments plugin build failed" }
-Get-ChildItem $env:MIG29_OUT -Filter MiG29Instruments.dll | ForEach-Object { "OUTPUT $($_.FullName) $($_.Length)" }
+Get-ChildItem $env:MIG29_OUT -Filter MiG29SMTInstruments.dll | ForEach-Object { "OUTPUT $($_.FullName) $($_.Length)" }
 
 # 5. One archive with everything (the first release asset; what NOMNOM / NOMM install): .nobp + plugin + credits.
-$zip = Join-Path $env:MIG29_OUT "MiG-29-Fulcrum_$ver.zip"
-Remove-Item "$env:MIG29_OUT\MiG-29-Fulcrum_*.zip" -ErrorAction SilentlyContinue
+$zip = Join-Path $env:MIG29_OUT "MiG-29SMT-Mod_$ver.zip"
+Remove-Item "$env:MIG29_OUT\MiG-29SMT-Mod_*.zip" -ErrorAction SilentlyContinue
 Copy-Item (Join-Path $repo "mod\CREDITS.txt") $env:MIG29_OUT -Force
-Compress-Archive -Path "$env:MIG29_OUT\MiG-29 Fulcrum_$ver.nobp", "$env:MIG29_OUT\MiG29Instruments.dll", "$env:MIG29_OUT\CREDITS.txt" -DestinationPath $zip -Force
+Compress-Archive -Path "$env:MIG29_OUT\MiG-29SMT_$ver.nobp", "$env:MIG29_OUT\MiG29SMTInstruments.dll", "$env:MIG29_OUT\CREDITS.txt" -DestinationPath $zip -Force
 "OUTPUT $zip $((Get-Item $zip).Length)"
 if ($Release -and $code -eq 0) {
     Get-ChildItem $env:MIG29_OUT -Filter *.nobp | ForEach-Object { python (Join-Path $PSScriptRoot "backup_build.py") $_.FullName --note $Note }

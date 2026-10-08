@@ -4,7 +4,7 @@ would come through solid skin there for the last tenth of its swing. This cuts t
 triangle (front side facing outside air) in the door box is clipped exactly along the box planes; the inside pieces become the door
 (left, and the mirrored right), the outside pieces replace the cut triangles in the skin. The door hinges along its lower edge and
 swings down and out (DOOR_OPEN deg) so that it hangs clear of the leg's path; the open-door clearance is checked here.
-python main_bay_door.py <MiG29Source> [MiG29Out]  ->  MiG29Source/main_bay_door.json"""
+python main_bay_door.py <MiG29SMTSource> [MiG29SMTOut]  ->  MiG29SMTSource/main_bay_door.json"""
 import json, os, sys
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

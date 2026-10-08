@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
-namespace MiG29Instruments
+namespace MiG29SMTInstruments
 {
     // Optional: hides the game's screen-space flight HUD while the player flies the MiG-29, whose analog gauges show the same data.
     // Hidden: the HUD/HMD flight-data apps (speed, altitude, climb, AoA, g, Mach, fuel, throttle, gear...) and FlightHud's pitch
@@ -12,7 +12,7 @@ namespace MiG29Instruments
     // Elements fade out through a CanvasGroup (alpha 0), so the game can keep toggling and updating them underneath.
     public class GlassHudHider : MonoBehaviour
     {
-        const string MiG29Key = "mig29_Fulcrum";
+        const string MiG29Key = "mig29smt_Fulcrum";
         static readonly HashSet<string> CombatReadouts = new HashSet<string>
             { "WeaponIndicator", "CountermeasureIndicator", "PylonIndicator", "TurretAutoIndicator", "SystemStatusDisplay" };
         static readonly FieldInfo AppTypeField = typeof(HUDApp).GetField("type", BindingFlags.Instance | BindingFlags.NonPublic);

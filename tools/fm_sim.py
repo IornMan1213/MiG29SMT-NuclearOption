@@ -1,7 +1,7 @@
 """Offline flight-model check for the MiG-29 mod.
 
 Re-implements Nuclear Option's aero force model (NuclearOption.Jobs.AeroJob_Math + Turbojet/JetNozzle thrust) and uses the
-per-part data dumped from the built prefab (tools/aero_reference.json, a copy of MiG29Out/aero.json) plus the FM config below to compute:
+per-part data dumped from the built prefab (tools/aero_reference.json, a copy of MiG29SMTOut/aero.json) plus the FM config below to compute:
   trim (AoA + stabilator for 1 g), static margin, max level speed vs altitude, sustained/instantaneous turn, climb, stall.
 
 Usage: python tools/fm_sim.py [config.json]     (default: tools/fm_config.json)

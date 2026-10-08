@@ -3,8 +3,8 @@ junction; a leg swinging forward about the skewed hinge (blender/analysis/main_g
 through the outer skin of the intake trunk ahead of it. The real jet has a large door on the side of the trunk there. This finds the
 OUTER skin triangles (facing outside air) the swept leg (all poses, unsprung at rest and extended) comes within CLEAR of, closes
 small gaps in that set, and writes them out: the builder cuts them from the skin and hangs them on a door that opens with the gear.
-python main_bay_cut.py <MiG29Source> <search result json>  ->  MiG29Source/main_bay_cut.json
-needs MiG29Source/main_wheel_L.json (the KR-67 wheel, MiG frame, rest pose)."""
+python main_bay_cut.py <MiG29SMTSource> <search result json>  ->  MiG29SMTSource/main_bay_cut.json
+needs MiG29SMTSource/main_wheel_L.json (the KR-67 wheel, MiG frame, rest pose)."""
 import json, os, sys
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

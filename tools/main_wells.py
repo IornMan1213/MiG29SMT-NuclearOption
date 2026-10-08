@@ -3,8 +3,8 @@ user screenshot, v0.9.0), and the leg now stows in the wing-root glove above the
 the hidden space inside the closed skin within CLEAR of everything the leg sweeps through (plugin path and the game's own arc,
 unsprung at rest and extended), connected to the bay doors; its surface is meshed with surface nets (smoothed), facing into the
 well, and left open where the doors are. Box-projected UVs, 1 texture tile per metre (tools/bay_texture.py).
-Motion: tools/data/main_gear_motion.json; leg: MiG29Source/main_gear.json (tools/main_gear_gen.py); wheel: tools/data/kr67_main_wheel_L.json.
-python main_wells.py <MiG29Source>  ->  MiG29Source/main_wells.json"""
+Motion: tools/data/main_gear_motion.json; leg: MiG29SMTSource/main_gear.json (tools/main_gear_gen.py); wheel: tools/data/kr67_main_wheel_L.json.
+python main_wells.py <MiG29SMTSource>  ->  MiG29SMTSource/main_wells.json"""
 import json, os, sys
 import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -39,7 +39,7 @@ hid = bay_grid.Hidden(bay_grid.skin_triangles(SRC, ("body", "gear_doors_closed",
                       boxes=[((-0.98, -0.88, 3.59), (-0.42, -0.30, 3.61))])
 shape = np.array(hid.shape)
 
-# --- the swept leg: plugin path and the game's straight arc (MiG29Instruments/GearPath.cs, MiG29Tools.MiG29MainGear) ---
+# --- the swept leg: plugin path and the game's straight arc (MiG29SMTInstruments/GearPath.cs, MiG29SMTTools.MiG29MainGear) ---
 mot = json.load(open(os.path.join(HERE, "data", "main_gear_motion.json")))
 st, pa = mot["stow"], mot["path"]
 legd = json.load(open(os.path.join(SRC, "main_gear.json")))

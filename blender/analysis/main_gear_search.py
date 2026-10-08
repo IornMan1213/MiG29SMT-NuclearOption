@@ -1,7 +1,7 @@
 """Main-gear stow search: fold angle (about the hinge), strut rotation (wheel twist about the strut) and a translation that put the
 left main leg (the right one is its mirror: gearMount_R is scaled -1 in x) inside the hidden space of the MiG skin (tools/bay_grid.py) with the most margin. Gear vertices come from the
-MiG29Tools.MiG29GearDump 'down' pose (MiG29Out/gear_down.json); the posing is checked against its 'up' dump first.
-python main_gear_search.py <MiG29Source> <MiG29Out>"""
+MiG29SMTTools.MiG29GearDump 'down' pose (MiG29SMTOut/gear_down.json); the posing is checked against its 'up' dump first.
+python main_gear_search.py <MiG29SMTSource> <MiG29SMTOut>"""
 import json, os, sys, time
 import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tools"))

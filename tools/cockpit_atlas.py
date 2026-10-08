@@ -1,6 +1,6 @@
 """Cockpit texture atlas for the from-scratch MiG-29 interior: paint swatches, instrument faces, switch panels, caution panel.
 
-python tools/cockpit_atlas.py <MiG29Source dir>
+python tools/cockpit_atlas.py <MiG29SMTSource dir>
   -> cockpit_atlas.png (2048, sRGB base colour), cockpit_metallic.png (R metallic, A smoothness), cockpit_atlas.json (rects)
 
 Everything is drawn here (no external art). Rects in the JSON are pixel boxes [x, y, w, h], y down from the top; the Blender
@@ -145,7 +145,7 @@ def numbers(d, c, s, a0, a1, labels, r, size):
         label(d, (c + math.sin(a) * r, c - math.cos(a) * r), t, size, path=FONT_N)
 
 
-DRAW_NEEDLES = False   # needles, cards and the attitude ball are real moving parts (MiG29Instruments plugin)
+DRAW_NEEDLES = False   # needles, cards and the attitude ball are real moving parts (MiG29SMTInstruments plugin)
 LAYOUT = {}            # lamp / instrument layout shared with blender/cockpit_build.py (written to cockpit_atlas.json)
 
 
@@ -443,7 +443,7 @@ for i, (name, w, h) in enumerate([("sp_lc1", 384, 256), ("sp_lc2", 256, 256), ("
                                    ("sp_wr", 128, 256), ("sp_aft", 256, 128)]):
     put(name, switch_panel(w, h, 100 + i, name=name), (0, 90))
 
-# caution / warning panel: every caption has a job (MiG29Instruments plugin). (id, caption, colour)
+# caution / warning panel: every caption has a job (MiG29SMTInstruments plugin). (id, caption, colour)
 RED, AMB, GRN = (190, 40, 28), (220, 140, 20), (50, 170, 70)
 CAUTION = [("fire_l", "ПОЖАР Л", RED), ("fire_r", "ПОЖАР П", RED), ("lowalt", "ОПАСН ВЫС", RED), ("aoa", "ВЫХОД α", RED),
            ("overg", "ПЕРЕГРУЗ", RED), ("missile", "РАКЕТА", RED),

@@ -2,17 +2,17 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
-namespace MiG29Instruments
+namespace MiG29SMTInstruments
 {
     // Main-gear retraction path for the MiG-29, as on the real jet (user's War Thunder reference): the leg swings forward and up
     // beside the intake trunk with the wheel edge-on, through the strip door under the wing root; over the last fifth of the travel
     // the wheel turns flat and goes in through the forward door at the top of the trunk side into the glove above the intake duct.
-    // The game itself folds the leg in one straight arc about the hinge parent's x axis, which MiG29Tools.MiG29MainGear yaws so the
+    // The game itself folds the leg in one straight arc about the hinge parent's x axis, which MiG29SMTTools.MiG29MainGear yaws so the
     // arc ends in the right stow; that arc carries the wheel through the trunk skin mid-swing, so while a leg moves this re-poses it
     // each frame along blender/analysis/main_gear_path3.py's path. At rest (fully down or up) it does nothing.
     public class GearPathDriver : MonoBehaviour
     {
-        // Keep in step with MiG29Tools.MiG29MainGear (StowYaw, StowFold, StowStrut) and main_gear_path3.json.
+        // Keep in step with MiG29SMTTools.MiG29MainGear (StowYaw, StowFold, StowStrut) and main_gear_path3.json.
         const float StowYaw = 25f, StowFold = -76f, StowStrut = 135f;
         const float KeyT = 0.8f, KeyYaw = -10f, KeyFold = -70f, KeyStrut = 0f;   // keyframe: KeyYaw is in the unyawed mount frame
 

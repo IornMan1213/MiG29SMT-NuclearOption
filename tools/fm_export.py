@@ -1,4 +1,4 @@
-"""fm_config.json (dict form, for the simulator) -> MiG29Source/fm_unity.json (array form, for JsonUtility in the builder)."""
+"""fm_config.json (dict form, for the simulator) -> MiG29SMTSource/fm_unity.json (array form, for JsonUtility in the builder)."""
 import json, sys
 c = json.load(open("tools/fm_config.json"))
 e = c["engine"]
@@ -17,6 +17,6 @@ for name, p in c["parts"].items():
         "hasCenterOfLift": "centerOfLift" in p, "centerOfLift": p.get("centerOfLift", [0, 0, 0]),
     })
 import os
-dst = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.environ["BLUEPRINTER_PROJECT"], "MiG29Source", "fm_unity.json")
+dst = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.environ["BLUEPRINTER_PROJECT"], "MiG29SMTSource", "fm_unity.json")
 json.dump(out, open(dst, "w"), indent=1)
 print("wrote", dst, len(out["parts"]), "parts")

@@ -1,6 +1,6 @@
-"""Writes MiG29Out/gear_new_<pose>.json: the dumped gear poses with both main legs re-posed by the main_gear_search.json result (left
+"""Writes MiG29SMTOut/gear_new_<pose>.json: the dumped gear poses with both main legs re-posed by the main_gear_search.json result (left
 leg posed, right leg = its mirror), the strut-top yoke above the skin trimmed, for gear_look.py previews before a Unity build.
-python main_gear_apply.py <MiG29Out>"""
+python main_gear_apply.py <MiG29SMTOut>"""
 import json, os, sys
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

@@ -3,7 +3,7 @@ mirror). Reference only (not selectable): the skin with the forward door cut, th
 / stowed along the plugin path. Blender axes: X = MiG x (left is negative), Y = MiG z (forward), Z = MiG y (up).
 Save the .blend, then blender/well_export.py writes tools/data/main_well_L_override.json, which tools/main_wells.py uses instead
 of its generated well.
-blender -b --python well_edit.py -- <MiG29Source> <MiG29Out> <out .blend>"""
+blender -b --python well_edit.py -- <MiG29SMTSource> <MiG29SMTOut> <out .blend>"""
 import bpy, json, os, sys
 import numpy as np
 

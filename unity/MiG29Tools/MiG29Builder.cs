@@ -5,23 +5,23 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace MiG29Tools
+namespace MiG29SMTTools
 {
-    // Builds the "mig29" Blueprinter mod from the KR-67 Ifrit (Multirole1):
-    // KR-67 flight systems + the Sketchfab MiG-29 visual model (MiG29Source/mig29_mesh.json, exported by blender/export_mig29.py).
+    // Builds the "mig29smt" Blueprinter mod from the KR-67 Ifrit (Multirole1):
+    // KR-67 flight systems + the Sketchfab MiG-29 visual model (MiG29SMTSource/mig29_mesh.json, exported by blender/export_mig29.py).
     public static class MiG29Builder
     {
-        const string ModName = "mig29";
+        const string ModName = "mig29smt";
         const string ModDir = "Assets/Blueprinter/Mods/" + ModName;
-        const string SourceDir = "MiG29Source";
+        const string SourceDir = "MiG29SMTSource";
         const string BasePrefab = "Assets/Blueprinter/_donotship/GameObject/Multirole1_PLACEHOLDER.prefab";
         const string BaseDefinition = "Assets/Blueprinter/_donotship/MonoBehaviour/Multirole1_PLACEHOLDER.asset";
         const string BaseParameters = "Assets/Blueprinter/_donotship/MonoBehaviour/Multirole1_parameters_PLACEHOLDER.asset";
         const string BaseSkin = "Assets/Blueprinter/_donotship/Material/Multirole1_skin_PLACEHOLDER.mat";
 
-        public const string JsonKey = "mig29_Fulcrum";
-        public const string DisplayName = "MiG-29 Fulcrum";
-        public const string Version = "0.9.0";
+        public const string JsonKey = "mig29smt_Fulcrum";
+        public const string DisplayName = "MiG-29SMT";
+        public const string Version = "0.1.0";
 
         // MiG model frame -> aircraft root. Puts MiG main wheels on the KR-67 main gear and MiG wheels on KR-67 ground line.
         static readonly Vector3 ModelOffset = new Vector3(0f, -0.44f, -2.655f);
@@ -39,7 +39,7 @@ namespace MiG29Tools
         // gear arms (drag struts) aim at fixed targets and stick out of the MiG skin once the gear folds
         static readonly string[] HiddenAnyway = { "_arm", "gearDoor", "gearbay", "LOD", "canopy_F", "canopy_R", "canopyFrame_F", "canopyFrame_R" };
 
-        [MenuItem("MiG29/1. Build MiG-29 prefab + definitions")]
+        [MenuItem("MiG29SMT/1. Build MiG-29 prefab + definitions")]
         public static void BuildAssets()
         {
             var data = JsonUtility.FromJson<MeshDump>(File.ReadAllText(Path.Combine(SourceDir, "mig29_mesh.json")));
@@ -47,6 +47,7 @@ namespace MiG29Tools
             // model's nozzle cans give way to the from-scratch RD-33 nozzles (MiG29Nozzles.Build below)
             foreach (var p in data.parts.Where(p => p.name == "body"))
             {
+                ApplyHump(p.vertices, p.normals);
                 MiG29MainGear.CutBodySkin(ref p.vertices, ref p.normals, ref p.uvs, ref p.triangles);
                 p.triangles = MiG29Nozzles.StripModelNozzles(p.vertices, p.triangles, out int stripped);
                 Debug.Log($"[MiG29] nozzles: {stripped} model nozzle triangles stripped");
@@ -63,7 +64,7 @@ namespace MiG29Tools
             var src = AssetDatabase.LoadAssetAtPath<GameObject>(BasePrefab);
             var go = (GameObject)PrefabUtility.InstantiatePrefab(src);
             PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
-            go.name = "MiG29";
+            go.name = "MiG29SMT";
             go.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
             var root = go.transform;
 
@@ -123,14 +124,14 @@ namespace MiG29Tools
             var oldGun = MiG29Weapons.SetupGun(go, ModelOffset, weapons);
             var displays = MiG29Polish.BuildDisplays(go);
 
-            var prefabPath = ModDir + "/MiG29.prefab";
+            var prefabPath = ModDir + "/MiG29SMT.prefab";
             var prefab = PrefabUtility.SaveAsPrefabAsset(go, prefabPath);
             UnityEngine.Object.DestroyImmediate(go);
 
             // --- definitions ---
             var parameters = CloneAsset(BaseParameters, ModDir + "/MiG29_parameters.asset");
             var pso = new SerializedObject(parameters);
-            pso.FindProperty("aircraftName").stringValue = "MiG-29";
+            pso.FindProperty("aircraftName").stringValue = "MiG-29SMT";
             RemoveBayLoadouts(pso);
             MiG29Weapons.ClearLoadoutSlot(pso, centreSet);
             MiG29Weapons.InsertLoadoutSlot(pso, outerPylonSet);
@@ -141,11 +142,11 @@ namespace MiG29Tools
             MiG29FlightModel.ApplyToParameters(pso, fm);
             pso.ApplyModifiedPropertiesWithoutUndo();
 
-            var definition = CloneAsset(BaseDefinition, ModDir + "/MiG29.asset");
+            var definition = CloneAsset(BaseDefinition, ModDir + "/MiG29SMT.asset");
             var dso = new SerializedObject(definition);
             dso.FindProperty("jsonKey").stringValue = JsonKey;
             dso.FindProperty("unitName").stringValue = DisplayName;
-            dso.FindProperty("code").stringValue = "MiG-29";
+            dso.FindProperty("code").stringValue = "MiG-29SMT";
             dso.FindProperty("description").stringValue =
                 "A twin-engine, fourth-generation air superiority fighter. The MiG-29 Fulcrum trades range and payload for agility: " +
                 "a high thrust-to-weight ratio and a blended lifting body give it superb low-speed handling in close-range dogfights.";
@@ -181,12 +182,12 @@ namespace MiG29Tools
             Debug.Log("[MiG29] assets built");
         }
 
-        [MenuItem("MiG29/2. Build .nobp into BepInEx/plugins")]
+        [MenuItem("MiG29SMT/2. Build .nobp into BepInEx/plugins")]
         public static void BuildMod()
         {
             var output = Environment.GetEnvironmentVariable("MIG29_OUT");
             if (string.IsNullOrEmpty(output))
-                output = Path.GetFullPath("MiG29Build");
+                output = Path.GetFullPath("MiG29SMTBuild");
             Directory.CreateDirectory(output);
             Blueprinter.ModBuilder.Build(ModName, DisplayName, Version, output);
             Debug.Log("[MiG29] mod built -> " + output);
@@ -362,6 +363,24 @@ namespace MiG29Tools
                 Debug.Log($"[MiG29] stab_{side}: {moved} static discharger pieces moved from the body");
             }
             body.triangles = Enumerable.Range(0, T.Length / 3).Where(i => !removed.Contains(i * 3)).SelectMany(i => new[] { T[i * 3], T[i * 3 + 1], T[i * 3 + 2] }).ToArray();
+        }
+
+        [Serializable] class HumpDump { public int[] index; public float[] pos, nrm; }
+
+        // MiG-29SMT dorsal spine: the 9.12 model's spine skin lifted by tools/smt_hump.py (original body vertex indices, so applied
+        // before any skin cut adds vertices)
+        static void ApplyHump(float[] vertices, float[] normals)
+        {
+            var path = Path.Combine(SourceDir, "hump.json");
+            if (!File.Exists(path)) { Debug.LogWarning("[MiG29] no hump.json: 9.12 spine"); return; }
+            var h = JsonUtility.FromJson<HumpDump>(File.ReadAllText(path));
+            for (int k = 0; k < h.index.Length; k++)
+                for (int a = 0; a < 3; a++)
+                {
+                    vertices[h.index[k] * 3 + a] = h.pos[k * 3 + a];
+                    normals[h.index[k] * 3 + a] = h.nrm[k * 3 + a];
+                }
+            Debug.Log($"[MiG29] SMT spine: {h.index.Length} vertices raised");
         }
 
         static Transform Find(Transform root, string name)
@@ -656,7 +675,7 @@ namespace MiG29Tools
 
                 // FOD door: on the real jet a hinged panel in the roof of each duct swings down on the ground and seals the intake
                 // (the engines then breathe through the louvres on top of the wing roots). Built open, lying along the duct roof
-                // (y -0.27..-0.32) from its hinge just behind the lower lip; the MiG29Instruments plugin closes it on the ground by
+                // (y -0.27..-0.32) from its hinge just behind the lower lip; the MiG29SMTInstruments plugin closes it on the ground by
                 // turning the hinge MiG29InstrumentMath.FodClosedDeg down to the duct floor (y -0.85 at z 3.80).
                 var hinge = new GameObject(side < 0 ? "MiG29_fod_L" : "MiG29_fod_R").transform;
                 hinge.SetParent(part, false);

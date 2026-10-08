@@ -1,7 +1,7 @@
-﻿"""Writes MiG29Out/gear_new2_<pose>.json for gear_look.py: the dumped gear poses with both main legs replaced by the from-scratch leg
-(MiG29Source/main_gear.json + the KR-67 wheel) posed by the main_gear_search2.py result (skewed hinge: yaw, fold, strut twist, shift;
+﻿"""Writes MiG29SMTOut/gear_new2_<pose>.json for gear_look.py: the dumped gear poses with both main legs replaced by the from-scratch leg
+(MiG29SMTSource/main_gear.json + the KR-67 wheel) posed by the main_gear_search2.py result (skewed hinge: yaw, fold, strut twist, shift;
 left leg posed, right leg its mirror). In-flight poses use the fully extended unsprung (EXT=1, default), as LandingGear holds it.
-python main_gear_apply2.py <MiG29Source> <MiG29Out>   env: RESULT (default main_gear_search2.json), EXT (1 / 0)"""
+python main_gear_apply2.py <MiG29SMTSource> <MiG29SMTOut>   env: RESULT (default main_gear_search2.json), EXT (1 / 0)"""
 import json, os, sys
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

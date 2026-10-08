@@ -6,13 +6,13 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace MiG29Tools
+namespace MiG29SMTTools
 {
     // Presentation polish for the MiG-29: opening canopy, MiG damage display + map icon (rasterised from the MiG's own
     // per-part geometry), liveries, loading screens.
     public static class MiG29Polish
     {
-        const string ModDir = "Assets/Blueprinter/Mods/mig29";
+        const string ModDir = "Assets/Blueprinter/Mods/mig29smt";
         const string UiDir = ModDir + "/ui";
         const string StatusBase = "Assets/Blueprinter/_donotship/GameObject/StatusDisplay_Multirole1_PLACEHOLDER.prefab";
 
@@ -381,7 +381,7 @@ namespace MiG29Tools
         {
             EnsureUiDir();
             var dst = $"{ModDir}/textures/{file}";
-            File.Copy(Path.Combine("MiG29Source", file), dst, true);
+            File.Copy(Path.Combine("MiG29SMTSource", file), dst, true);
             AssetDatabase.ImportAsset(dst, ImportAssetOptions.ForceUpdate);
             var imp = (TextureImporter)AssetImporter.GetAtPath(dst);
             imp.maxTextureSize = 2048; imp.sRGBTexture = true; imp.textureCompression = TextureImporterCompression.CompressedHQ;
@@ -412,8 +412,8 @@ namespace MiG29Tools
             var desert = Livery("MiG29_livery_desert", ImportColor("mig29_basecolor_desert.png"), new Color32(196, 172, 128, 255));
             var digital = Livery("MiG29_livery_digital", ImportColor("mig29_basecolor_digital.png"), new Color32(150, 160, 170, 255));
             var display = Livery("MiG29_livery_display", ImportColor("mig29_basecolor_display.png"), new Color32(40, 70, 140, 255));
-            // hand-painted in Blender (blender/livery_edit.py), copied into MiG29Source by build_mig29.ps1 when it exists
-            string custom = File.Exists(Path.Combine("MiG29Source", "mig29_basecolor_custom.png"))
+            // hand-painted in Blender (blender/livery_edit.py), copied into MiG29SMTSource by build_mig29.ps1 when it exists
+            string custom = File.Exists(Path.Combine("MiG29SMTSource", "mig29_basecolor_custom.png"))
                 ? Livery("MiG29_livery_custom", ImportColor("mig29_basecolor_custom.png"), new Color32(170, 178, 178, 255)) : null;
 
             var liveries = pso.FindProperty("liveries");
@@ -463,7 +463,7 @@ namespace MiG29Tools
             foreach (var file in new[] { "loading_mig29_bank.png", "loading_mig29_climb.png", "loading_mig29_digital.png", "loading_mig29_display.png" })
             {
                 var dst = $"{UiDir}/{file}";
-                File.Copy(Path.Combine("MiG29Source", file), dst, true);
+                File.Copy(Path.Combine("MiG29SMTSource", file), dst, true);
                 AssetDatabase.ImportAsset(dst, ImportAssetOptions.ForceUpdate);
                 var imp = (TextureImporter)AssetImporter.GetAtPath(dst);
                 imp.textureType = TextureImporterType.Sprite; imp.spriteImportMode = SpriteImportMode.Single;

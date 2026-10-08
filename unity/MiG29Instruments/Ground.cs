@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using MiG29Tools;
+using MiG29SMTTools;
 using UnityEngine;
 
-namespace MiG29Instruments
+namespace MiG29SMTInstruments
 {
     // Things the real MiG-29 does on the ground. Both run for every MiG (player or AI), from the aircraft's own state.
     //  - IntakeDriver: the intake FOD doors (MiG29_fod_<L|R>, built open by MiG29Builder.AddIntakeBlockers) close on the ground

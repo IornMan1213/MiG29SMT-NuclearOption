@@ -5,9 +5,9 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 
-namespace MiG29Tools
+namespace MiG29SMTTools
 {
-    // Dev helper: dumps weapon-related setup of a prefab (hardpoint sets, guns, mounts) to MiG29Out/inspect.txt.
+    // Dev helper: dumps weapon-related setup of a prefab (hardpoint sets, guns, mounts) to MiG29SMTOut/inspect.txt.
     public static class MiG29Inspect
     {
         static Type T(string n) => AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name == "Assembly-CSharp").Select(a => a.GetType(n)).First(t => t != null);
@@ -55,7 +55,7 @@ namespace MiG29Tools
                     DumpObject(sb, c, "  ");
                 }
             }
-            Directory.CreateDirectory("MiG29Out");
+            Directory.CreateDirectory("MiG29SMTOut");
             File.WriteAllText(outFile, sb.ToString());
             Debug.Log("[MiG29] inspect written " + outFile);
         }
@@ -64,7 +64,7 @@ namespace MiG29Tools
         {
             try
             {
-                var go = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Blueprinter/Mods/mig29/MiG29.prefab"));
+                var go = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Blueprinter/Mods/mig29smt/MiG29SMT.prefab"));
                 var sb = new StringBuilder();
                 foreach (var r in go.GetComponentsInChildren<Renderer>(true))
                 {
@@ -84,7 +84,7 @@ namespace MiG29Tools
                     var t = go.GetComponentsInChildren<Transform>(true).FirstOrDefault(x => x.name == n);
                     if (t) sb.AppendLine($"T {Path(t, go.transform)} pos={t.position:F3}");
                 }
-                File.WriteAllText("MiG29Out/visible_kr67.txt", sb.ToString());
+                File.WriteAllText("MiG29SMTOut/visible_kr67.txt", sb.ToString());
                 EditorApplication.Exit(0);
             }
             catch (Exception e) { Debug.LogException(e); EditorApplication.Exit(1); }
@@ -95,13 +95,13 @@ namespace MiG29Tools
         {
             try
             {
-                var go = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Blueprinter/Mods/mig29/MiG29.prefab"));
+                var go = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Blueprinter/Mods/mig29smt/MiG29SMT.prefab"));
                 var plane = go.GetComponentsInChildren<Collider>(true).Where(c => c.enabled).ToList();
                 var sb = new StringBuilder();
-                foreach (var (hp, mount) in new[] { ("hardpoint_pylon_L1", "mig29_R27R_AKU470"), ("hardpoint_pylon_L2", "mig29_R73_APU73"), ("hardpoint_pylon_L3", "mig29_R73_APU73"), ("hardpoint_pylon_L1", "mig29_R27T_AKU470"), ("hardpoint_pylon_L3", "mig29_R60M_APU60") })
+                foreach (var (hp, mount) in new[] { ("hardpoint_pylon_L1", "mig29smt_R27R_AKU470"), ("hardpoint_pylon_L2", "mig29smt_R73_APU73"), ("hardpoint_pylon_L3", "mig29smt_R73_APU73"), ("hardpoint_pylon_L1", "mig29smt_R27T_AKU470"), ("hardpoint_pylon_L3", "mig29smt_R60M_APU60") })
                 {
                     var t = go.GetComponentsInChildren<Transform>(true).First(x => x.name == hp);
-                    var m = (GameObject)UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Blueprinter/Mods/mig29/weapons/{mount}.prefab"), t);
+                    var m = (GameObject)UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Blueprinter/Mods/mig29smt/weapons/{mount}.prefab"), t);
                     m.transform.localPosition = Vector3.zero; m.transform.localRotation = Quaternion.identity;
                     foreach (var mc in m.GetComponentsInChildren<Collider>(true))
                         foreach (var pc in plane)
@@ -109,7 +109,7 @@ namespace MiG29Tools
                                 sb.AppendLine($"{hp}/{mount}/{mc.name} ({mc.GetType().Name}) overlaps {Path(pc.transform, go.transform)} ({pc.GetType().Name}) by {dist:F3} m");
                     sb.AppendLine($"checked {hp}/{mount}: missile at {m.GetComponentsInChildren<Collider>(true).Select(c => c.bounds.center.ToString("F2")).FirstOrDefault()}");
                 }
-                File.WriteAllText("MiG29Out/missile_overlap.txt", sb.ToString());
+                File.WriteAllText("MiG29SMTOut/missile_overlap.txt", sb.ToString());
                 EditorApplication.Exit(0);
             }
             catch (Exception e) { Debug.LogException(e); EditorApplication.Exit(1); }
@@ -120,7 +120,7 @@ namespace MiG29Tools
         {
             try
             {
-                var go = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Blueprinter/Mods/mig29/MiG29.prefab"));
+                var go = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Blueprinter/Mods/mig29smt/MiG29SMT.prefab"));
                 go.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
                 var sb = new StringBuilder();
                 var cockpit = go.GetComponentsInChildren<Transform>(true).First(t => t.name == "cockpit");
@@ -149,7 +149,7 @@ namespace MiG29Tools
                                 sb.AppendLine($"REF {Path(c.transform, go.transform)}:{c.GetType().Name}.{it.propertyPath} -> {targets[kt]} ({o.GetType().Name})");
                         }
                 }
-                File.WriteAllText("MiG29Out/cockpit_refs.txt", sb.ToString());
+                File.WriteAllText("MiG29SMTOut/cockpit_refs.txt", sb.ToString());
                 // posed pilot + KR-67 seat as OBJ in the MiG frame (prefab frame minus ModelOffset)
                 var off = new Vector3(0f, -0.44f, -2.655f);
                 var obj = new StringBuilder(); int baseIdx = 1;
@@ -165,7 +165,7 @@ namespace MiG29Tools
                     for (int i = 0; i < tr.Length; i += 3) obj.AppendLine($"f {tr[i] + baseIdx} {tr[i + 1] + baseIdx} {tr[i + 2] + baseIdx}");
                     baseIdx += m.vertexCount;
                 }
-                File.WriteAllText("MiG29Out/pilot_mig.obj", obj.ToString());
+                File.WriteAllText("MiG29SMTOut/pilot_mig.obj", obj.ToString());
                 EditorApplication.Exit(0);
             }
             catch (Exception e) { Debug.LogException(e); EditorApplication.Exit(1); }
@@ -177,7 +177,7 @@ namespace MiG29Tools
             try
             {
                 var sb = new StringBuilder();
-                var go = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Blueprinter/Mods/mig29/MiG29.prefab");
+                var go = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Blueprinter/Mods/mig29smt/MiG29SMT.prefab");
                 foreach (var n in new[] { "tacScreen", "warningLights", "joystick", "throttle" })
                 {
                     var t = go.GetComponentsInChildren<Transform>(true).First(x => x.name == n);
@@ -203,7 +203,7 @@ namespace MiG29Tools
                 }
                 foreach (var c in go.GetComponentsInChildren<Component>(true).Where(c => c != null && c.GetType().Name == "CockpitWarningLights"))
                     DumpObject(sb, c, "  W ");
-                File.WriteAllText("MiG29Out/cockpit_meshes.txt", sb.ToString());
+                File.WriteAllText("MiG29SMTOut/cockpit_meshes.txt", sb.ToString());
                 EditorApplication.Exit(0);
             }
             catch (Exception e) { Debug.LogException(e); EditorApplication.Exit(1); }
@@ -214,7 +214,7 @@ namespace MiG29Tools
             try
             {
                 var sb = new StringBuilder();
-                var a = AssetDatabase.LoadAssetAtPath<ScriptableObject>("Assets/Blueprinter/Mods/mig29/MiG29_parameters.asset");
+                var a = AssetDatabase.LoadAssetAtPath<ScriptableObject>("Assets/Blueprinter/Mods/mig29smt/MiG29_parameters.asset");
                 var so = new SerializedObject(a);
                 foreach (var name in new[] { "loadouts", "StandardLoadouts" })
                 {
@@ -237,7 +237,7 @@ namespace MiG29Tools
                         }
                     }
                 }
-                File.WriteAllText("MiG29Out/inspect_params.txt", sb.ToString());
+                File.WriteAllText("MiG29SMTOut/inspect_params.txt", sb.ToString());
                 EditorApplication.Exit(0);
             }
             catch (Exception e) { Debug.LogException(e); EditorApplication.Exit(1); }
@@ -247,7 +247,7 @@ namespace MiG29Tools
         {
             try
             {
-                Dump("Assets/Blueprinter/Mods/mig29/MiG29.prefab", "MiG29Out/inspect_mig29.txt");
+                Dump("Assets/Blueprinter/Mods/mig29smt/MiG29SMT.prefab", "MiG29SMTOut/inspect_mig29.txt");
                 var sb = new StringBuilder();
                 foreach (var path in new[] {
                     "Assets/Blueprinter/_donotship/GameObject/gun_27mm_internal_PLACEHOLDER.prefab",
@@ -265,7 +265,7 @@ namespace MiG29Tools
                     }
                     else foreach (var o in AssetDatabase.LoadAllAssetsAtPath(path)) if (o != null) { sb.AppendLine($"  == {o.GetType().Name} {o.name}"); DumpObject(sb, o, "    "); }
                 }
-                File.WriteAllText("MiG29Out/inspect_gun.txt", sb.ToString());
+                File.WriteAllText("MiG29SMTOut/inspect_gun.txt", sb.ToString());
                 EditorApplication.Exit(0);
             }
             catch (Exception e) { Debug.LogException(e); EditorApplication.Exit(1); }

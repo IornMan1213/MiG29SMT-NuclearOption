@@ -1,5 +1,5 @@
 """Close-up renders of the MiG model's engine nozzles (workbench), to plan the from-scratch nozzles.
-blender -b --python nozzle_look.py -- <MiG29Source> <out dir>"""
+blender -b --python nozzle_look.py -- <MiG29SMTSource> <out dir>"""
 import bpy, os, sys, math
 from mathutils import Vector
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))

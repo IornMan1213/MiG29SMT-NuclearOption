@@ -1,6 +1,6 @@
-"""Side-by-side render of the mod's missiles (from MiG29Source/missiles.json) for the project page.
+"""Side-by-side render of the mod's missiles (from MiG29SMTSource/missiles.json) for the project page.
 
-blender -b --factory-startup --python missiles_lineup.py -- <MiG29Source dir> <out.png>
+blender -b --factory-startup --python missiles_lineup.py -- <MiG29SMTSource dir> <out.png>
 """
 import bpy, bmesh, json, math, os, sys
 from mathutils import Vector

@@ -4,7 +4,7 @@ panel there, so this cuts them out of the body skin like main_bay_door.py: every
 exactly along its x / z planes; the pieces inside become the panel (the tail's skin is a 1 cm double layer, so a panel gets the
 outer skin and the inner sheet as its underside), the pieces outside go back into the skin. Under each panel a shallow well floor
 (3.5 cm below the skin, following it) closes the hole when the panel is open.
-python airbrake_cut.py <MiG29Source>  ->  MiG29Source/airbrakes.json"""
+python airbrake_cut.py <MiG29SMTSource>  ->  MiG29SMTSource/airbrakes.json"""
 import json, os, sys
 import numpy as np
 

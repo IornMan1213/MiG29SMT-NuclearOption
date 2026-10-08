@@ -4,7 +4,7 @@ For a grid over the bay (x across, z along, MiG frame) it records:
   floor = the outer skin from below (closed gear doors or belly), the lowest a stowed part may reach
   roof  = the outer skin from above (top of the fuselage or the intake walls' outside), the highest it may reach
 The model's bay-well walls in between are hidden once the doors close, so a stowed leg may pass through them.
-python nose_bay.py <MiG29Source>  ->  <MiG29Source>/nose_bay.json
+python nose_bay.py <MiG29SMTSource>  ->  <MiG29SMTSource>/nose_bay.json
 """
 import json, sys, os
 import numpy as np

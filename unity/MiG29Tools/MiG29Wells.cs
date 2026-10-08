@@ -4,17 +4,17 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace MiG29Tools
+namespace MiG29SMTTools
 {
-    // Wheel-well interiors (tools/gear_wells.py -> MiG29Source/gear_wells.json): the model's gear bays are bare holes in the skin that
+    // Wheel-well interiors (tools/gear_wells.py -> MiG29SMTSource/gear_wells.json): the model's gear bays are bare holes in the skin that
     // showed black with the doors open (user screenshot, v0.9.0). Each well (walls on the opening rim, ceiling under the outer skin,
     // faces pointing into the bay) hangs from the part its doors hang from. The single-sided MiG doors get a primer-grey inner face
     // too, so an open door no longer turns see-through from the bay side. Not damage renderers: liveries retexture those.
     public static class MiG29Wells
     {
-        const string ModDir = "Assets/Blueprinter/Mods/mig29";
+        const string ModDir = "Assets/Blueprinter/Mods/mig29smt";
         const string Dir = ModDir + "/wells";
-        const string SourceDir = "MiG29Source";
+        const string SourceDir = "MiG29SMTSource";
 
         [Serializable] class PartDump { public string name; public float[] vertices, normals, uvs; public int[] triangles; }
         [Serializable] class Dump { public PartDump[] parts; }

@@ -3,8 +3,8 @@ view, so the leg comes up forward and inboard in a single arc, while a linkage t
 hinge about its parent's x axis yawed by the hinge's own base y euler (localEulerAngles = base + (fold, 0, 0); Unity applies
 Ry * Rx * Rz), so giving the hinge a base yaw (children compensated) makes the game swing the leg about a yawed axis with no plugin.
 Searches hinge yaw, fold, strut twist and an optional (penalised) stow shift for the left leg (right = mirror) against the hidden
-space inside the MiG skin (tools/bay_grid.py). Leg: tools/main_gear_gen.py (MiG29Source/main_gear.json, wheel included).
-python main_gear_search2.py <MiG29Source> <MiG29Out>
+space inside the MiG skin (tools/bay_grid.py). Leg: tools/main_gear_gen.py (MiG29SMTSource/main_gear.json, wheel included).
+python main_gear_search2.py <MiG29SMTSource> <MiG29SMTOut>
 env: YAWS="-40,41,5" FOLDS="-120,-65,5" STRUTS="-180,180,15" SPAN="0.15,0.1,0.15" T_WEIGHT=0.3 CLIP_WEIGHT=0.15 FLAT_WEIGHT=0.03"""
 import json, os, sys, time
 import numpy as np

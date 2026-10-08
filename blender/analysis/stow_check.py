@@ -2,7 +2,7 @@
 its prefab rest pose (as dumped: an aircraft spawned with the gear up) and at full suspension extension. LandingGear.FixedUpdate keeps
 setting unsprung = bumpStop - unsprung.up * (suspensionTravel - wheelRadius) while the gear moves in the air, so a leg retracted in
 flight stows with the wheel further out along the leg (main 0.21 m, nose 0.31 m beyond the rest pose).
-python stow_check.py <MiG29Source> <MiG29Out> [up dump, default gear_up.json]"""
+python stow_check.py <MiG29SMTSource> <MiG29SMTOut> [up dump, default gear_up.json]"""
 import json, os, sys
 import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tools"))

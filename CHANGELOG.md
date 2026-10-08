@@ -1,5 +1,14 @@
 # Changelog
 
+## SMT 0.1.0 (work in progress)
+Forked from the MiG-29 Fulcrum mod 0.9.0 as a separate mod (own keys, weapons, plugin and install folder, so both install together).
+- Glass cockpit: two MFI-10 colour displays (flight display drawn live by the plugin; tactical display), up-front control panel,
+  standby airspeed, altimeter and attitude ball. The 9.12's round flight instruments, HSI, radar altimeter, clock, oxygen and cabin
+  gauges are gone.
+- The SMT's dorsal spine (hump) raised behind the canopy; internal fuel 4,460 kg.
+
+The MiG-29 mod's history follows.
+
 ## 0.9.0 (Update 9.0)
 **Airbrakes, brake chute and intake doors, like the real jet.**
 - **Airbrakes.** The MiG-29's two speed-brake panels on the tail between the engines, one on top opening up and one underneath

@@ -1,6 +1,6 @@
 """Turntable frames of the armed MiG-29 for the project page (loads showcase.py's scene setup, then spins the jet).
 
-blender -b MiG-29.blend --python turntable.py -- <MiG29Source dir> <out_dir> [livery png] [frames]
+blender -b MiG-29.blend --python turntable.py -- <MiG29SMTSource dir> <out_dir> [livery png] [frames]
 """
 import bpy, math, os, sys
 

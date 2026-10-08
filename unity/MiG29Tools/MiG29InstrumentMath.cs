@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace MiG29Tools
+namespace MiG29SMTTools
 {
-    // What the MiG-29 instruments show, from one snapshot of the aircraft. Shared by the MiG29Instruments BepInEx plugin (live values)
+    // What the MiG-29 instruments show, from one snapshot of the aircraft. Shared by the MiG29SMTInstruments BepInEx plugin (live values)
     // and the editor preview (test values), so the renders check exactly what flies. Angles are degrees clockwise from 12 o'clock,
     // matching the dial faces drawn by tools/cockpit_atlas.py.
     public class FlightState
@@ -12,7 +12,7 @@ namespace MiG29Tools
         public float iasKmh, mach, altM, vsMs, aoaDeg, g = 1f, pitchDeg, rollDeg, headingDeg, radAltM;
         public float rpmL, rpmR, egtL, egtR;          // % and deg C
         public float fuelKg, fuelFrac = 1f;
-        public bool ptbEmpty;   // drop tanks carried and empty (MiG29Instruments StoresDriver)
+        public bool ptbEmpty;   // drop tanks carried and empty (MiG29SMTInstruments StoresDriver)
         public float oxygen = 150f, hydraulic, cabinKm, volts, brake, throttle, yaw;
         public float hours, minutes, seconds;
         public bool gearDown = true, gearMoving, onGround = true, canopyOpen, airborne;

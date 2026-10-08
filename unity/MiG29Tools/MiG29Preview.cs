@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace MiG29Tools
+namespace MiG29SMTTools
 {
     // Batchmode (with graphics) check renders of the built MiG-29 prefab, in the poses the game animates:
     //  flight_* : gear folded (foldDegrees + hingeFoldMotion), gear doors closed, canopy closed
@@ -13,8 +13,8 @@ namespace MiG29Tools
     // KR-67 leftovers that stay visible are drawn orange; MiG pieces use the MiG base texture.
     public static class MiG29Preview
     {
-        const string PrefabPath = "Assets/Blueprinter/Mods/mig29/MiG29.prefab";
-        const string BaseTex = "Assets/Blueprinter/Mods/mig29/textures/mig29_basecolor.png";
+        const string PrefabPath = "Assets/Blueprinter/Mods/mig29smt/MiG29SMT.prefab";
+        const string BaseTex = "Assets/Blueprinter/Mods/mig29smt/textures/mig29_basecolor.png";
 
         static Type T(string n) => AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name == "Assembly-CSharp").Select(a => a.GetType(n)).First(t => t != null);
 
@@ -27,7 +27,7 @@ namespace MiG29Tools
         {
             try
             {
-                Directory.CreateDirectory("MiG29Out");
+                Directory.CreateDirectory("MiG29SMTOut");
                 var go = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath));
                 go.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
                 var aso = new SerializedObject(go.GetComponent(T("Aircraft")));
@@ -61,15 +61,15 @@ namespace MiG29Tools
                 bool pretty = Environment.GetEnvironmentVariable("MIG29_PRETTY") == "1";   // screen-like colours for the project page
                 var lit = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
                 var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(BaseTex);
-                var ckTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Blueprinter/Mods/mig29/textures/cockpit_atlas.png");
+                var ckTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Blueprinter/Mods/mig29smt/textures/cockpit_atlas.png");
                 // MIG29_POSE=sample: instruments posed from MiG29InstrumentMath.Sample(), lamps lit as the plugin would light them
                 var litLamps = new System.Collections.Generic.HashSet<string>();
                 if (Environment.GetEnvironmentVariable("MIG29_POSE") == "sample")
                 {
                     var st = MiG29InstrumentMath.Sample();
-                    foreach (var t in go.GetComponentsInChildren<Transform>(true).Where(t => t.name.StartsWith("MiG29_ins_")))
+                    foreach (var t in go.GetComponentsInChildren<Transform>(true).Where(t => t.name.StartsWith("SMT_ins_")))
                     {
-                        var id = t.name.Substring("MiG29_ins_".Length); var nd = t.Find("needle");
+                        var id = t.name.Substring("SMT_ins_".Length); var nd = t.Find("needle");
                         if (MiG29InstrumentMath.Pose(id, st, out var lp, out var lr)) { nd.localPosition = lp; nd.localRotation = lr; }
                         else nd.localRotation = id == "adi_ball" ? MiG29InstrumentMath.Ball(st) : Quaternion.Euler(0f, 0f, -MiG29InstrumentMath.Needles[id](st));
                     }
@@ -82,10 +82,10 @@ namespace MiG29Tools
                     if (r.sharedMaterial != null && r.sharedMaterial.name == "MiG29_cockpit")   // from-scratch cockpit: its own atlas
                     {
                         var cm = new Material(lit); cm.SetTexture("_BaseMap", ckTex); cm.SetFloat("_Smoothness", 0.25f);
-                        bool isLamp = r.name.StartsWith("MiG29_lamp_");
+                        bool isLamp = r.name.StartsWith("SMT_lamp_");
                         if (isLamp) { cm.EnableKeyword("_EMISSION"); cm.SetTexture("_EmissionMap", ckTex); cm.SetColor("_EmissionColor", Color.white * 1.2f); }
                         r.sharedMaterials = Enumerable.Repeat(cm, r.sharedMaterials.Length).ToArray();
-                        r.enabled = !isLamp || litLamps.Contains(r.name.Substring("MiG29_lamp_".Length)); continue;
+                        r.enabled = !isLamp || litLamps.Contains(r.name.Substring("SMT_lamp_".Length)); continue;
                     }
                     if (!(r is SkinnedMeshRenderer) && (!r.TryGetComponent<MeshFilter>(out var mf) || mf.sharedMesh == null)) continue;
                     bool mig = r.name.StartsWith("MiG29_");
@@ -128,7 +128,7 @@ namespace MiG29Tools
                     RenderTexture.active = rt;
                     var img = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
                     img.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0); img.Apply();
-                    File.WriteAllBytes($"MiG29Out/cockpit{(migInterior ? "MiG" : "")}_{name}.png", img.EncodeToPNG());
+                    File.WriteAllBytes($"MiG29SMTOut/cockpit{(migInterior ? "MiG" : "")}_{name}.png", img.EncodeToPNG());
                     RenderTexture.active = null;
                 }
                 Debug.Log("[MiG29] cockpit views rendered");
@@ -141,12 +141,12 @@ namespace MiG29Tools
         {
             try
             {
-                Directory.CreateDirectory("MiG29Out");
+                Directory.CreateDirectory("MiG29SMTOut");
                 Render("flight", tintParts: false, gearUp: true, open: false);
                 Render("ground", tintParts: false, gearUp: false, open: true);
                 Render("parts", tintParts: true, gearUp: true, open: false);
                 Render("armed", tintParts: false, gearUp: true, open: false, armed: true);
-                Render("armedB", tintParts: false, gearUp: true, open: false, armed: true, inner: "mig29_R27T_AKU470", outer: "mig29_R60M_APU60");
+                Render("armedB", tintParts: false, gearUp: true, open: false, armed: true, inner: "mig29smt_R27T_AKU470", outer: "mig29smt_R60M_APU60");
                 EditorApplication.Exit(0);
             }
             catch (Exception e)
@@ -158,7 +158,7 @@ namespace MiG29Tools
 
         static int idCount;
 
-        static void Render(string prefix, bool tintParts, bool gearUp, bool open, bool armed = false, string inner = "mig29_R27R_AKU470", string outer = "mig29_R73_APU73")
+        static void Render(string prefix, bool tintParts, bool gearUp, bool open, bool armed = false, string inner = "mig29smt_R27R_AKU470", string outer = "mig29smt_R73_APU73")
         {
             var go = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath));
             go.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
@@ -198,8 +198,8 @@ namespace MiG29Tools
             if (armed)
             {
                 // hang the mounts the way WeaponManager does: mount prefab at the hardpoint transform
-                var r27 = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Blueprinter/Mods/mig29/weapons/{inner}.prefab");
-                var r73 = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Blueprinter/Mods/mig29/weapons/{outer}.prefab");
+                var r27 = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Blueprinter/Mods/mig29smt/weapons/{inner}.prefab");
+                var r73 = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Blueprinter/Mods/mig29smt/weapons/{outer}.prefab");
                 foreach (var (hp, prefab) in new[] { ("hardpoint_pylon_L1", r27), ("hardpoint_pylon_R1", r27), ("hardpoint_pylon_L2", r73), ("hardpoint_pylon_R2", r73), ("hardpoint_pylon_L3", r73), ("hardpoint_pylon_R3", r73) })
                 {
                     var t = go.GetComponentsInChildren<Transform>(true).First(x => x.name == hp);
@@ -274,7 +274,7 @@ namespace MiG29Tools
                 RenderTexture.active = rt;
                 var img = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
                 img.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0); img.Apply();
-                File.WriteAllBytes($"MiG29Out/{prefix}_{name}.png", img.EncodeToPNG());
+                File.WriteAllBytes($"MiG29SMTOut/{prefix}_{name}.png", img.EncodeToPNG());
                 RenderTexture.active = null;
             }
             var c = new Vector3(0, -0.4f, 0.5f);

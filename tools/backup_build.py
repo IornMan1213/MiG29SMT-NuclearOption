@@ -1,14 +1,14 @@
 """Back up a built .nobp: copy it into builds/ (local, ignored on main) and commit it to the `builds` branch on GitHub with a
 regenerated download table (README.md: version, link, size, SHA-256).
 
-python tools/backup_build.py "<path to MiG-29 Fulcrum_x.y.z.nobp>" [--note "text for this version"] [--no-push]
+python tools/backup_build.py "<path to MiG-29SMT_x.y.z.nobp>" [--note "text for this version"] [--no-push]
 
 Works from a temporary git worktree, so the main checkout and its branch are never touched.
 """
 import argparse, hashlib, json, os, re, shutil, subprocess, sys, tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-URL = "https://github.com/IornMan1213/MiG29-NuclearOption/raw/builds/"
+URL = "https://github.com/IornMan1213/MiG29SMT-NuclearOption/raw/builds/"
 
 
 def git(*args, cwd=REPO):
@@ -18,7 +18,7 @@ def git(*args, cwd=REPO):
 def version(name):
     m = re.search(r"_(\d+\.\d+\.\d+)\.nobp$", name)
     if not m:
-        sys.exit(f"can't read a version from {name!r} (expected 'MiG-29 Fulcrum_x.y.z.nobp')")
+        sys.exit(f"can't read a version from {name!r} (expected 'MiG-29SMT_x.y.z.nobp')")
     return m.group(1)
 
 
@@ -35,16 +35,16 @@ def main():
         shutil.copy2(src, local)
     # the instruments plugin built next to the .nobp is kept as MiG29Instruments_<ver>.dll
     dll_name = f"MiG29Instruments_{ver}.dll"
-    dll_src = os.path.join(os.path.dirname(src), "MiG29Instruments.dll")
+    dll_src = os.path.join(os.path.dirname(src), "MiG29SMTInstruments.dll")
     if os.path.exists(dll_src):
         shutil.copy2(dll_src, os.path.join(local, dll_name))
     dll_src = os.path.join(local, dll_name) if os.path.exists(os.path.join(local, dll_name)) else None
     # the all-in-one release zip is kept locally (not on the builds branch: it duplicates the .nobp)
-    zip_src = os.path.join(os.path.dirname(src), f"MiG-29-Fulcrum_{ver}.zip")
+    zip_src = os.path.join(os.path.dirname(src), f"MiG-29SMT-Mod_{ver}.zip")
     if os.path.exists(zip_src) and os.path.abspath(zip_src) != os.path.abspath(os.path.join(local, os.path.basename(zip_src))):
         shutil.copy2(zip_src, local)
 
-    wt = tempfile.mkdtemp(prefix="mig29_builds_")
+    wt = tempfile.mkdtemp(prefix="mig29smt_builds_")
     shutil.rmtree(wt)
     git("fetch", "-q", "origin", "builds")
     git("worktree", "add", "-q", wt, "builds")
@@ -69,8 +69,8 @@ def main():
         open(os.path.join(wt, "README.md"), "w", encoding="utf-8").write(
             "# MiG-29 Fulcrum builds\n\n"
             "Every released build of the mod, kept here so nothing gets lost. Put **one** `.nobp` in "
-            "`BepInEx/plugins/MiG-29_Fulcrum/` (delete older ones). Requires BepInEx 5 and Blueprinter 2.0.1+. From 0.7.0 also put "
-            "`MiG29Instruments_<version>.dll` there, renamed to `MiG29Instruments.dll`: it makes the cockpit instruments work.\n\n"
+            "`BepInEx/plugins/MiG-29SMT/` (delete older ones). Requires BepInEx 5 and Blueprinter 2.0.1+. From 0.7.0 also put "
+            "`MiG29Instruments_<version>.dll` there, renamed to `MiG29SMTInstruments.dll`: it makes the cockpit instruments work.\n\n"
             "| Version | File | Size | SHA-256 | Notes |\n|---|---|---|---|---|\n" + "\n".join(rows) + "\n\n"
             "Builds before 0.4.1 predate the repository and were not kept; 0.4.2 was not kept either.\n\n"
             "The mod contains a modified version of \"MiG-29 - Fighter Jet - Free\" by bohmerang (CC BY-NC-SA 4.0); the builds are "

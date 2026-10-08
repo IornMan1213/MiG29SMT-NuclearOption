@@ -1,6 +1,6 @@
 """Two-ship formation render (loading screen / promo): showcase.py's armed jet plus a wingman copy, 2048x1024.
 
-blender -b MiG-29.blend --python formation.py -- <MiG29Source dir> <out.png> [livery png]
+blender -b MiG-29.blend --python formation.py -- <MiG29SMTSource dir> <out.png> [livery png]
 """
 import bpy, math, os, sys
 

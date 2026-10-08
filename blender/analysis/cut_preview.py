@@ -1,5 +1,5 @@
-"""Writes MiG29Out/gear_cut_<pose>.json for gear_look.py: the airframe skin with the main_bay_cut.json triangles shown as door (blue),
-over a gear_new3_<pose> dump. python cut_preview.py <MiG29Source> <MiG29Out> <pose,pose,...>"""
+"""Writes MiG29SMTOut/gear_cut_<pose>.json for gear_look.py: the airframe skin with the main_bay_cut.json triangles shown as door (blue),
+over a gear_new3_<pose> dump. python cut_preview.py <MiG29SMTSource> <MiG29SMTOut> <pose,pose,...>"""
 import json, os, sys
 import numpy as np
 S, O = sys.argv[1], sys.argv[2]

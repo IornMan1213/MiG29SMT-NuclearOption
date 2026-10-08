@@ -2,7 +2,7 @@
 screenshot, v0.9.0). Each well follows its door outline: walls stand on the opening rim and rise to a ceiling just under the outer
 skin (tools/bay_grid.py spans), faces pointing into the bay so only a look through the open doors sees them. Grey-green primer
 texture with frames and stringers.
-python gear_wells.py <MiG29Source>  ->  gear_wells.json, bay_atlas.png, bay_metallic.png"""
+python gear_wells.py <MiG29SMTSource>  ->  gear_wells.json, bay_atlas.png, bay_metallic.png"""
 import json, os, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter

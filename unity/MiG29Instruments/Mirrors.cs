@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace MiG29Instruments
+namespace MiG29SMTInstruments
 {
     // Folds the MiG-29's three rear-view mirrors (MiG29_ins_mirror_<c|l|r>, built by blender/cockpit_build.py) flat along the inside
     // of the canopy, or swings them back out. Driven by the "Fold mirrors" option; the fold key flips that option mid-flight (and it
     // stays as left). The mirrors only show the pilot's cockpit, so this works on the aircraft the player flies.
     public class MirrorFolder : MonoBehaviour
     {
-        const string MiG29Key = "mig29_Fulcrum";
+        const string MiG29Key = "mig29smt_Fulcrum";
         const float FallbackFold = 60f;   // degrees about the hinge, for a build without the "folded" pose
         const float Duration = 0.6f;      // seconds to fold or unfold
 
@@ -31,7 +31,7 @@ namespace MiG29Instruments
                 {
                     found = ac; mirrors.Clear(); angle = -1f;
                     foreach (var t in InstrumentDriver.Root(ac).GetComponentsInChildren<Transform>(true))
-                        if (t.name.StartsWith("MiG29_ins_mirror_") && t.Find("needle") is Transform n)
+                        if (t.name.StartsWith("SMT_ins_mirror_") && t.Find("needle") is Transform n)
                             mirrors.Add((n, t.Find("folded") is Transform f ? f.localRotation : Quaternion.Euler(FallbackFold, 0f, 0f)));
                 }
                 if (mirrors.Count == 0) return;

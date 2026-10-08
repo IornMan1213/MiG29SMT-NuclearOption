@@ -4,10 +4,10 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace MiG29Tools
+namespace MiG29SMTTools
 {
     // MiG-29 flight model, tuned offline with tools/fm_sim.py (a re-implementation of the game's AeroJob_Math / Turbojet
-    // force model) and exported to MiG29Source/fm_unity.json by tools/fm_export.py.
+    // force model) and exported to MiG29SMTSource/fm_unity.json by tools/fm_export.py.
     public static class MiG29FlightModel
     {
         [Serializable] public class Key { public float t, v; }
@@ -16,7 +16,7 @@ namespace MiG29Tools
         [Serializable] public class Part { public string name; public float wingArea, dragArea; public bool hasCom, hasCenterOfLift; public float[] com, centerOfLift; }
         [Serializable] public class Config { public float fuelKg; public Engine engine; public Key[] altitudeThrust; public Airfoil[] airfoils; public Part[] parts; }
 
-        public static Config Load() => JsonUtility.FromJson<Config>(File.ReadAllText("MiG29Source/fm_unity.json"));
+        public static Config Load() => JsonUtility.FromJson<Config>(File.ReadAllText("MiG29SMTSource/fm_unity.json"));
 
         static Type T(string n) => AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name == "Assembly-CSharp").Select(a => a.GetType(n)).First(t => t != null);
 

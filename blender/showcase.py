@@ -1,7 +1,7 @@
-"""Showcase renders for the project page: the MiG-29 armed with the mod's R-27R / R-73 (from MiG29Source/missiles.json)
+"""Showcase renders for the project page: the MiG-29 armed with the mod's R-27R / R-73 (from MiG29SMTSource/missiles.json)
 on its pylons, in either livery, against a sky.
 
-blender -b MiG-29.blend --python showcase.py -- <MiG29Source dir> <out_dir> [shot names...]
+blender -b MiG-29.blend --python showcase.py -- <MiG29SMTSource dir> <out_dir> [shot names...]
 """
 import bpy, bmesh, json, math, os, sys
 from mathutils import Vector, Euler
@@ -35,7 +35,7 @@ for name in ("MiG-29-landingOn", "MiG-29-landingOnLight", "MiG-29-hud", "MiG-29-
 # --- missiles and launchers -------------------------------------------------------------------------------------
 dump = {p["name"]: p for p in json.load(open(os.path.join(src, "missiles.json")))["parts"]}
 atlas = bpy.data.images.load(os.path.join(src, "missile_atlas.png"))
-mmat = bpy.data.materials.new("mig29_missile"); mmat.use_nodes = True
+mmat = bpy.data.materials.new("mig29smt_missile"); mmat.use_nodes = True
 bsdf = mmat.node_tree.nodes["Principled BSDF"]
 tex = mmat.node_tree.nodes.new("ShaderNodeTexImage"); tex.image = atlas; tex.interpolation = "Closest"
 mmat.node_tree.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])

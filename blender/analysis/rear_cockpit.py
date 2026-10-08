@@ -1,5 +1,5 @@
 """Ray casts for the compartment behind the seat: canopy glass and fuselage surfaces under the rear canopy (MiG frame).
-python rear_cockpit.py <MiG29Source>"""
+python rear_cockpit.py <MiG29SMTSource>"""
 import json, sys, numpy as np
 
 d = json.load(open(sys.argv[1] + "/mig29_mesh.json"))

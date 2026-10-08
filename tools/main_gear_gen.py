@@ -4,8 +4,8 @@ the real leg folds), so this one is a slim MiG-style leg built on the KR-67's ow
   sprung   : hinge trunnion, oleo cylinder with collar, side-brace lug, upper torque link, brake line
   unsprung : chrome piston, trailing lever to the axle, axle stub into the KR-67 wheel hub (wheel kept: 0.85 m, as the real 840 mm),
              lower torque link
-Pivots (MiG frame) from MiG29Tools.MiG29GearDump: hinge, strut axis (strut-rotation pivot), wheel centre.
-python main_gear_gen.py <MiG29Source>  ->  main_gear.json, gear_atlas.png, gear_metallic.png"""
+Pivots (MiG frame) from MiG29SMTTools.MiG29GearDump: hinge, strut axis (strut-rotation pivot), wheel centre.
+python main_gear_gen.py <MiG29SMTSource>  ->  main_gear.json, gear_atlas.png, gear_metallic.png"""
 import json, os, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter

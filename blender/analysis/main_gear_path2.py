@@ -4,7 +4,7 @@ wing-root junction, and the straight arc carries the wheel through the skin ahea
 its own axis choice (yaw1) up to a keyframe at t = K (fold1, strut twist strut1, shift T1), edge-on through the slot, then takes the
 shortest rotation on to the stow while already inside the skin. A pose scores by how much of the lower leg / wheel is buried in
 structure while part of it is still outside the airframe (visible piercing), unsprung extended as in flight.
-python main_gear_path2.py <MiG29Source> <MiG29Out>  ->  MiG29Out/main_gear_path2.json"""
+python main_gear_path2.py <MiG29SMTSource> <MiG29SMTOut>  ->  MiG29SMTOut/main_gear_path2.json"""
 import json, os, sys, itertools
 import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tools"))

@@ -1,6 +1,6 @@
 {
- "_note": "MiG-29 (9.12) flight model for Nuclear Option. Areas/drag are game-model values tuned in tools/fm_sim.py against published MiG-29 figures.",
- "fuelKg": 3690,
+ "_note": "MiG-29SMT (9.19) flight model for Nuclear Option: the 9.12 model with the SMT spine tank (+~950 L, fuelKg 3690 -> 4460). Areas/drag are game-model values tuned in tools/fm_sim.py against published MiG-29 figures.",
+ "fuelKg": 4460,
  "alphaLimitDeg": 28,
  "engine": {
   "_note": "RD-33: 49.4 kN dry / 81.4 kN AB. AB +10% and a generous altitude lapse stand in for ram recovery, which the game does not model.",
@@ -220,7 +220,7 @@
   }
  ],
  "parts": {
-  "MiG29": {
+  "MiG29SMT": {
    "wingArea": 2.0,
    "dragArea": 0.1,
    "centerOfLift": [

@@ -1,5 +1,5 @@
 """Ray casts into the MiG mesh (mig29_mesh.json, MiG frame) for the drop-tank station and the chaff/flare dispensers.
-python stores_pos.py <MiG29Source>"""
+python stores_pos.py <MiG29SMTSource>"""
 import json, sys, numpy as np
 d = json.load(open(sys.argv[1] + "/mig29_mesh.json"))
 body = next(p for p in d["parts"] if p["name"] == "body")

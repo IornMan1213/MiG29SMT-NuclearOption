@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
-namespace MiG29Instruments
+namespace MiG29SMTInstruments
 {
     // Drop tanks for the MiG-29 Fulcrum mod. In the .nobp a drop tank is a releasable store (select it and fire, like a bomb) whose
     // mass is the full tank. This driver gives it fuel: while a tank hangs on its pylon it keeps the internal tanks topped up, as the

@@ -1,7 +1,7 @@
 """Procedural (from-scratch) models of the R-73, R-27R and their APU-73 / AKU-470 launchers.
 
-Output: MiG29Source/missiles.json (same mesh-dump format as mig29_mesh.json: Unity coords, metres, +Z forward,
-Unity front-face winding) and MiG29Source/missile_atlas.png (+ flat normal / metallic textures).
+Output: MiG29SMTSource/missiles.json (same mesh-dump format as mig29_mesh.json: Unity coords, metres, +Z forward,
+Unity front-face winding) and MiG29SMTSource/missile_atlas.png (+ flat normal / metallic textures).
 Dimensions from open sources: R-73 2.90 m x 0.17 m, canard span 0.385 m, wing span 0.51 m;
 R-27R 4.08 m x 0.23 m, canard span 0.97 m ("butterfly" control fins), wing span 0.80 m;
 R-27T 3.80 m x 0.23 m (same airframe, short infrared nose with a glass dome);
@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image
 
 import os
-OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.environ["BLUEPRINTER_PROJECT"], "MiG29Source")
+OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.environ["BLUEPRINTER_PROJECT"], "MiG29SMTSource")
 
 # 4x4 colour atlas: cell -> sRGB
 CELLS = {

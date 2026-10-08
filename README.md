@@ -1,10 +1,21 @@
-# MiG-29 Fulcrum for Nuclear Option
+# MiG-29SMT for Nuclear Option
 
-A flyable MiG-29 (9.12) mod for [Nuclear Option](https://store.steampowered.com/app/2168680/Nuclear_Option/). It has its own flight model
-tuned to real-world data, a cockpit modelled from scratch where every instrument works, R-27R, R-27T, R-73 and R-60M missiles built from scratch, a GSh-30-1
-cannon, droppable PTB-1500 / PTB-1150 fuel tanks, flares and radar chaff from its own tail-boom dispensers, a working canopy and gear
-doors, a custom cockpit damage display, and nine liveries. Its three rear-view mirrors reflect with the
+**Work in progress (0.1.0, not released).** A flyable MiG-29SMT (9.19), the modernised Fulcrum, forked from the
+[MiG-29 Fulcrum mod](https://github.com/IornMan1213/MiG29-NuclearOption) and installable beside it. What makes it an SMT so far:
+
+- **Glass cockpit**: two MFI-10 colour displays in place of the 9.12's round gauges: a live flight display (attitude with pitch
+  ladder and bank scale, airspeed, altitude, heading tape, Mach, g, AoA, vertical speed, time) on the left and the tactical display
+  on the right, an up-front control panel under the HUD, and standby airspeed, altimeter and attitude instruments.
+- **The SMT's dorsal spine** ("hump"), which holds the extra fuel tank: the spine behind the canopy raised by up to 22 cm.
+- **More internal fuel**: 4,460 kg (the 9.12 carries 3,690 kg).
+
+Everything else comes from the MiG-29 mod: flight model, R-27R / R-27T / R-73 / R-60M, GSh-30-1, drop tanks, flares and chaff,
+airbrakes, brake chute, intake FOD doors, canopy and gear, damage display, liveries, and rear-view mirrors with the
 [NO Mirrors](https://github.com/IornMan1213/NuclearOption-Mirrors) plugin.
+
+Planned: R-77 (RVV-AE) and air-to-ground guided weapons, the retractable refuelling probe, the wider ILS-31 HUD, SMT liveries.
+
+The rest of this file is still the MiG-29 mod's.
 
 [![Latest release](https://img.shields.io/github/v/release/IornMan1213/MiG29-NuclearOption?include_prereleases&label=release)](https://github.com/IornMan1213/MiG29-NuclearOption/releases)
 [![Licence: code MIT, model CC BY-NC-SA 4.0](https://img.shields.io/badge/licence-MIT%20%2B%20CC%20BY--NC--SA%204.0-blue)](#licence)

@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace MiG29Tools
+namespace MiG29SMTTools
 {
     // MiG-29 speed brakes: two panels on the flat tail section between the engines, ahead of the brake-chute housing; the upper one
     // opens up, the lower one down, both hinged at their front edge. tools/airbrake_cut.py cuts them out of the body skin (with a
@@ -13,8 +13,8 @@ namespace MiG29Tools
     // it opens them with the throttle at idle (the HUD's AIRBRAKE detent), adds their drag and plays the stock airbrake sound.
     public static class MiG29Airbrakes
     {
-        const string ModDir = "Assets/Blueprinter/Mods/mig29";
-        const string SourceDir = "MiG29Source";
+        const string ModDir = "Assets/Blueprinter/Mods/mig29smt";
+        const string SourceDir = "MiG29SMTSource";
         const string StockFighter = "Assets/Blueprinter/_donotship/GameObject/Fighter1_PLACEHOLDER.prefab";
 
         // drag = DragAmount * air density * v^2 at full opening (the stock fighter's is 1): two ~0.5 m2 panels

@@ -2,7 +2,7 @@
 frames (raised flanges, rivet rows), stringers, panel tone variation and grime, hydraulic lines with clamps, a wiring loom and small
 stencils; a height map turned into a normal map gives the frames, lines and rivets depth. Everything wraps, so it tiles.
 The user found the old 512 px grid of grey tiles flat and plain (screenshot, v0.9.0).
-python bay_texture.py <MiG29Source>  ->  bay_atlas.png, bay_normal.png, bay_metallic.png"""
+python bay_texture.py <MiG29SMTSource>  ->  bay_atlas.png, bay_normal.png, bay_metallic.png"""
 import os, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter

@@ -6,10 +6,10 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
-namespace MiG29Tools
+namespace MiG29SMTTools
 {
     // MiG-29 (9.12) weapons: R-73 (AA-11 Archer), R-27R / R-27T (AA-10 Alamo-A / -B), R-60M (AA-8 Aphid), GSh-30-1 cannon.
-    // Models: tools/missile_gen.py (procedural, from scratch) -> MiG29Source/missiles.json.
+    // Models: tools/missile_gen.py (procedural, from scratch) -> MiG29SMTSource/missiles.json.
     // Missiles are cloned from stock prefabs for their effects/networking and re-tuned:
     //   R-73  <- AAM1 (MMR-S3, IR + thrust vectoring)
     //   R-27R <- AAM2 (AAM-29, two-stage motor) with its ARH seeker replaced by the SARH seeker of SAM_Radar1
@@ -19,7 +19,7 @@ namespace MiG29Tools
     //   GSh-30-1 <- gun_27mm_internal (150 rounds, ~1650 rpm, 870 m/s), muzzle moved to the left LERX root.
     public static class MiG29Weapons
     {
-        const string ModDir = "Assets/Blueprinter/Mods/mig29";
+        const string ModDir = "Assets/Blueprinter/Mods/mig29smt";
         const string Dir = ModDir + "/weapons";
         const string GO = "Assets/Blueprinter/_donotship/GameObject/";
         const string MB = "Assets/Blueprinter/_donotship/MonoBehaviour/";
@@ -46,12 +46,12 @@ namespace MiG29Tools
         {
             save = saveAsset;
             if (!AssetDatabase.IsValidFolder(Dir)) AssetDatabase.CreateFolder(ModDir, "weapons");
-            var dump = JsonUtility.FromJson<Dump>(File.ReadAllText("MiG29Source/missiles.json"));
+            var dump = JsonUtility.FromJson<Dump>(File.ReadAllText("MiG29SMTSource/missiles.json"));
             var meshes = dump.parts.ToDictionary(p => p.name, p => (Mesh)save(ToMesh(p), $"{Dir}/MiG29_{p.name}.asset"));
             var mat = (Material)save(MissileMaterial(skinTemplate), $"{Dir}/MiG29_missiles.mat");
 
             // ---------- R-73 ----------
-            var r73 = MakeMissile("AAM1", "mig29_R73", meshes["R73"], mat, length: 2.90f, radius: 0.085f, seekerFrom: null, seekerType: null);
+            var r73 = MakeMissile("AAM1", "mig29smt_R73", meshes["R73"], mat, length: 2.90f, radius: 0.085f, seekerFrom: null, seekerType: null);
             Tune(r73, so =>
             {
                 so.FindProperty("mass").floatValue = 105f;
@@ -64,21 +64,21 @@ namespace MiG29Tools
             TuneSeeker(r73, "IRSeeker", so => so.FindProperty("flareRejection").floatValue = 2.2f);
             var r73Prefab = SavePrefab(r73, $"{Dir}/mig29_R73.prefab");
 
-            var r73Def = CloneDef("AAM1", "mig29_R73_def", d =>
+            var r73Def = CloneDef("AAM1", "mig29smt_R73_def", d =>
             {
-                d.FindProperty("jsonKey").stringValue = "mig29_R73";
+                d.FindProperty("jsonKey").stringValue = "mig29smt_R73";
                 d.FindProperty("unitName").stringValue = "R-73";
                 d.FindProperty("description").stringValue = "R-73 (AA-11 Archer). Short-range, all-aspect infrared missile with gas-vane thrust vectoring and a wide off-boresight seeker, the MiG-29's dogfight weapon.";
                 d.FindProperty("mass").floatValue = 105f;
                 d.FindProperty("unitPrefab").objectReferenceValue = r73Prefab;
             });
             SetDefinition(r73Prefab, r73Def);
-            var r73Info = CloneInfo("AAM1", "mig29_R73_info", r73Prefab, "R-73", "R-73",
+            var r73Info = CloneInfo("AAM1", "mig29smt_R73_info", r73Prefab, "R-73", "R-73",
                 "Short-range infrared missile. Thrust vectoring and a 45 degree off-boresight seeker; best inside 15 km.",
                 minRange: 300f, maxRange: 20000f, minAlignment: 45f, cost: 0.30f, massPerRound: 105f);
 
             // ---------- R-27R ----------
-            var r27 = MakeMissile("AAM2", "mig29_R27R", meshes["R27R"], mat, length: 4.08f, radius: 0.115f, seekerFrom: "SAM_Radar1", seekerType: "SARHSeeker");
+            var r27 = MakeMissile("AAM2", "mig29smt_R27R", meshes["R27R"], mat, length: 4.08f, radius: 0.115f, seekerFrom: "SAM_Radar1", seekerType: "SARHSeeker");
             Tune(r27, so =>
             {
                 so.FindProperty("mass").floatValue = 253f;
@@ -98,30 +98,30 @@ namespace MiG29Tools
             });
             var r27Prefab = SavePrefab(r27, $"{Dir}/mig29_R27R.prefab");
 
-            var r27Def = CloneDef("AAM2", "mig29_R27R_def", d =>
+            var r27Def = CloneDef("AAM2", "mig29smt_R27R_def", d =>
             {
-                d.FindProperty("jsonKey").stringValue = "mig29_R27R";
+                d.FindProperty("jsonKey").stringValue = "mig29smt_R27R";
                 d.FindProperty("unitName").stringValue = "R-27R";
                 d.FindProperty("description").stringValue = "R-27R (AA-10 Alamo-A). Medium-range semi-active radar homing missile. The launching aircraft must keep its radar on the target until impact.";
                 d.FindProperty("mass").floatValue = 253f;
                 d.FindProperty("unitPrefab").objectReferenceValue = r27Prefab;
             });
             SetDefinition(r27Prefab, r27Def);
-            var r27Info = CloneInfo("AAM2", "mig29_R27R_info", r27Prefab, "R-27R", "R-27R",
+            var r27Info = CloneInfo("AAM2", "mig29smt_R27R_info", r27Prefab, "R-27R", "R-27R",
                 "Medium-range semi-active radar missile. Keep the target locked with your radar until impact.",
                 minRange: 1000f, maxRange: 50000f, minAlignment: 30f, cost: 0.70f, massPerRound: 253f);
 
             // ---------- launchers / mounts ----------
-            var r73MountPrefab = MakeMount("AAM1_single", "mig29_R73_APU73", "pylon", "aam1", meshes["APU73"], meshes["R73"], mat,
+            var r73MountPrefab = MakeMount("AAM1_single", "mig29smt_R73_APU73", "pylon", "aam1", meshes["APU73"], meshes["R73"], mat,
                 missileY: -0.10f - 0.085f, r73Info, 2.90f, 0.085f, $"{Dir}/mig29_R73_APU73.prefab", InnerSlope, 1.05f);
-            var r27MountPrefab = MakeMount("AAM2_single", "mig29_R27R_AKU470", "pylon", "aam2", meshes["AKU470"], meshes["R27R"], mat,
+            var r27MountPrefab = MakeMount("AAM2_single", "mig29smt_R27R_AKU470", "pylon", "aam2", meshes["AKU470"], meshes["R27R"], mat,
                 missileY: -0.14f - 0.115f, r27Info, 4.08f, 0.115f, $"{Dir}/mig29_R27R_AKU470.prefab", InnerSlope, 0.95f);
 
-            var r73Mount = CloneMount("AAM1_single", "mig29_R73_mount", r73MountPrefab, r73Info, "mig29_R73_single", "R-73", mass: 145f, emptyMass: 40f, drag: 0.04f);
-            var r27Mount = CloneMount("AAM2_single", "mig29_R27R_mount", r27MountPrefab, r27Info, "mig29_R27R_single", "R-27R", mass: 333f, emptyMass: 80f, drag: 0.07f);
+            var r73Mount = CloneMount("AAM1_single", "mig29smt_R73_mount", r73MountPrefab, r73Info, "mig29smt_R73_single", "R-73", mass: 145f, emptyMass: 40f, drag: 0.04f);
+            var r27Mount = CloneMount("AAM2_single", "mig29smt_R27R_mount", r27MountPrefab, r27Info, "mig29smt_R27R_single", "R-27R", mass: 333f, emptyMass: 80f, drag: 0.07f);
 
             // ---------- R-27T: R-27 airframe, infrared seeker ----------
-            var r27t = MakeMissile("AAM2", "mig29_R27T", meshes["R27T"], mat, length: 3.80f, radius: 0.115f, seekerFrom: "AAM1", seekerType: "IRSeeker");
+            var r27t = MakeMissile("AAM2", "mig29smt_R27T", meshes["R27T"], mat, length: 3.80f, radius: 0.115f, seekerFrom: "AAM1", seekerType: "IRSeeker");
             Tune(r27t, so =>
             {
                 so.FindProperty("mass").floatValue = 245f;
@@ -134,24 +134,24 @@ namespace MiG29Tools
             });
             TuneSeeker(r27t, "IRSeeker", so => so.FindProperty("flareRejection").floatValue = 1.6f);
             var r27tPrefab = SavePrefab(r27t, $"{Dir}/mig29_R27T.prefab");
-            var r27tDef = CloneDef("AAM2", "mig29_R27T_def", d =>
+            var r27tDef = CloneDef("AAM2", "mig29smt_R27T_def", d =>
             {
-                d.FindProperty("jsonKey").stringValue = "mig29_R27T";
+                d.FindProperty("jsonKey").stringValue = "mig29smt_R27T";
                 d.FindProperty("unitName").stringValue = "R-27T";
                 d.FindProperty("description").stringValue = "R-27T (AA-10 Alamo-B). The R-27 airframe with an infrared seeker: fire-and-forget at medium range, but the seeker must lock before launch.";
                 d.FindProperty("mass").floatValue = 245f;
                 d.FindProperty("unitPrefab").objectReferenceValue = r27tPrefab;
             });
             SetDefinition(r27tPrefab, r27tDef);
-            var r27tInfo = CloneInfo("AAM1", "mig29_R27T_info", r27tPrefab, "R-27T", "R-27T",
+            var r27tInfo = CloneInfo("AAM1", "mig29smt_R27T_info", r27tPrefab, "R-27T", "R-27T",
                 "Medium-range infrared missile. Fire-and-forget; lock the target's heat signature before launch.",
                 minRange: 800f, maxRange: 30000f, minAlignment: 25f, cost: 0.60f, massPerRound: 245f);
-            var r27tMountPrefab = MakeMount("AAM2_single", "mig29_R27T_AKU470", "pylon", "aam2", meshes["AKU470"], meshes["R27T"], mat,
+            var r27tMountPrefab = MakeMount("AAM2_single", "mig29smt_R27T_AKU470", "pylon", "aam2", meshes["AKU470"], meshes["R27T"], mat,
                 missileY: -0.14f - 0.115f, r27tInfo, 3.80f, 0.115f, $"{Dir}/mig29_R27T_AKU470.prefab", InnerSlope, 0.95f);
-            var r27tMount = CloneMount("AAM2_single", "mig29_R27T_mount", r27tMountPrefab, r27tInfo, "mig29_R27T_single", "R-27T", mass: 325f, emptyMass: 80f, drag: 0.07f);
+            var r27tMount = CloneMount("AAM2_single", "mig29smt_R27T_mount", r27tMountPrefab, r27tInfo, "mig29smt_R27T_single", "R-27T", mass: 325f, emptyMass: 80f, drag: 0.07f);
 
             // ---------- R-60M: small dogfight missile ----------
-            var r60 = MakeMissile("AAM1", "mig29_R60M", meshes["R60M"], mat, length: 2.09f, radius: 0.06f, seekerFrom: null, seekerType: null);
+            var r60 = MakeMissile("AAM1", "mig29smt_R60M", meshes["R60M"], mat, length: 2.09f, radius: 0.06f, seekerFrom: null, seekerType: null);
             Tune(r60, so =>
             {
                 so.FindProperty("mass").floatValue = 44f;
@@ -163,29 +163,29 @@ namespace MiG29Tools
             });
             TuneSeeker(r60, "IRSeeker", so => so.FindProperty("flareRejection").floatValue = 1.4f);
             var r60Prefab = SavePrefab(r60, $"{Dir}/mig29_R60M.prefab");
-            var r60Def = CloneDef("AAM1", "mig29_R60M_def", d =>
+            var r60Def = CloneDef("AAM1", "mig29smt_R60M_def", d =>
             {
-                d.FindProperty("jsonKey").stringValue = "mig29_R60M";
+                d.FindProperty("jsonKey").stringValue = "mig29smt_R60M";
                 d.FindProperty("unitName").stringValue = "R-60M";
                 d.FindProperty("description").stringValue = "R-60M (AA-8 Aphid). Light, very agile short-range infrared missile. Less range and flare resistance than the R-73, but small and cheap.";
                 d.FindProperty("mass").floatValue = 44f;
                 d.FindProperty("unitPrefab").objectReferenceValue = r60Prefab;
             });
             SetDefinition(r60Prefab, r60Def);
-            var r60Info = CloneInfo("AAM1", "mig29_R60M_info", r60Prefab, "R-60M", "R-60M",
+            var r60Info = CloneInfo("AAM1", "mig29smt_R60M_info", r60Prefab, "R-60M", "R-60M",
                 "Light short-range infrared missile. Very agile; best inside 6 km.",
                 minRange: 200f, maxRange: 8000f, minAlignment: 30f, cost: 0.12f, massPerRound: 44f);
-            var r60MountPrefab = MakeMount("AAM1_single", "mig29_R60M_APU60", "pylon", "aam1", meshes["APU60"], meshes["R60M"], mat,
+            var r60MountPrefab = MakeMount("AAM1_single", "mig29smt_R60M_APU60", "pylon", "aam1", meshes["APU60"], meshes["R60M"], mat,
                 missileY: -0.08f - 0.06f, r60Info, 2.09f, 0.06f, $"{Dir}/mig29_R60M_APU60.prefab", InnerSlope, 0.80f);
-            var r60Mount = CloneMount("AAM1_single", "mig29_R60M_mount", r60MountPrefab, r60Info, "mig29_R60M_single", "R-60M", mass: 66f, emptyMass: 22f, drag: 0.025f);
+            var r60Mount = CloneMount("AAM1_single", "mig29smt_R60M_mount", r60MountPrefab, r60Info, "mig29smt_R60M_single", "R-60M", mass: 66f, emptyMass: 22f, drag: 0.025f);
 
             // outer pylons: steeper fairing, own launchers (same missiles, same names in the loadout menu)
-            var r73OuterPrefab = MakeMount("AAM1_single", "mig29_R73_APU73_outer", "pylon", "aam1", meshes["APU73_O"], meshes["R73"], mat,
+            var r73OuterPrefab = MakeMount("AAM1_single", "mig29smt_R73_APU73_outer", "pylon", "aam1", meshes["APU73_O"], meshes["R73"], mat,
                 missileY: -0.10f - 0.085f, r73Info, 2.90f, 0.085f, $"{Dir}/mig29_R73_APU73_outer.prefab", OuterSlope, 1.05f);
-            var r73OuterMount = CloneMount("AAM1_single", "mig29_R73_outer_mount", r73OuterPrefab, r73Info, "mig29_R73_outer", "R-73", mass: 145f, emptyMass: 40f, drag: 0.04f);
-            var r60OuterPrefab = MakeMount("AAM1_single", "mig29_R60M_APU60_outer", "pylon", "aam1", meshes["APU60_O"], meshes["R60M"], mat,
+            var r73OuterMount = CloneMount("AAM1_single", "mig29smt_R73_outer_mount", r73OuterPrefab, r73Info, "mig29smt_R73_outer", "R-73", mass: 145f, emptyMass: 40f, drag: 0.04f);
+            var r60OuterPrefab = MakeMount("AAM1_single", "mig29smt_R60M_APU60_outer", "pylon", "aam1", meshes["APU60_O"], meshes["R60M"], mat,
                 missileY: -0.08f - 0.06f, r60Info, 2.09f, 0.06f, $"{Dir}/mig29_R60M_APU60_outer.prefab", OuterSlope, 0.80f);
-            var r60OuterMount = CloneMount("AAM1_single", "mig29_R60M_outer_mount", r60OuterPrefab, r60Info, "mig29_R60M_outer", "R-60M", mass: 66f, emptyMass: 22f, drag: 0.025f);
+            var r60OuterMount = CloneMount("AAM1_single", "mig29smt_R60M_outer_mount", r60OuterPrefab, r60Info, "mig29smt_R60M_outer", "R-60M", mass: 66f, emptyMass: 22f, drag: 0.025f);
 
             var gunMount = BuildGun();
 
@@ -209,7 +209,7 @@ namespace MiG29Tools
         static ScriptableObject BuildDropTank(string id, string name, Mesh tank, Mesh pylon, Material mat, float length, float halfHeight, float radius,
             float pylonDepth, float fullMass, float pylonMass, float drag, float rcs, string desc)
         {
-            var go = MakeMissile("bomb_250_1", "mig29_" + id, tank, mat, length, radius, seekerFrom: null, seekerType: null);
+            var go = MakeMissile("bomb_250_1", "mig29smt_" + id, tank, mat, length, radius, seekerFrom: null, seekerType: null);
             UnityEngine.Object Fx(string n) => AssetDatabase.LoadAssetAtPath<GameObject>(GO + n + "_PLACEHOLDER.prefab");
             Tune(go, so =>
             {
@@ -236,9 +236,9 @@ namespace MiG29Tools
             });
             var prefab = SavePrefab(go, $"{Dir}/mig29_{id}.prefab");
 
-            var def = CloneDef("Bomb_250_1", $"mig29_{id}_def", d =>
+            var def = CloneDef("Bomb_250_1", $"mig29smt_{id}_def", d =>
             {
-                d.FindProperty("jsonKey").stringValue = "mig29_" + id;
+                d.FindProperty("jsonKey").stringValue = "mig29smt_" + id;
                 d.FindProperty("unitName").stringValue = name;
                 d.FindProperty("description").stringValue = desc;
                 d.FindProperty("mass").floatValue = fullMass;
@@ -247,7 +247,7 @@ namespace MiG29Tools
             });
             SetDefinition(prefab, def);
 
-            var info = Clone("info_bomb_250_1", $"mig29_{id}_info");
+            var info = Clone("info_bomb_250_1", $"mig29smt_{id}_info");
             var iso = new SerializedObject(info);
             iso.FindProperty("weaponPrefab").objectReferenceValue = prefab;
             iso.FindProperty("weaponName").stringValue = name + " Drop Tank";
@@ -262,7 +262,7 @@ namespace MiG29Tools
             iso.FindProperty("fireInterval").floatValue = 0.3f;
             iso.ApplyModifiedPropertiesWithoutUndo();
 
-            var mountPrefab = MakeMount("bomb_250_single", $"mig29_{id}_rack", "pylon", "bomb", pylon, tank, mat,
+            var mountPrefab = MakeMount("bomb_250_single", $"mig29smt_{id}_rack", "pylon", "bomb", pylon, tank, mat,
                 missileY: -pylonDepth - halfHeight, info, length, radius, $"{Dir}/mig29_{id}_rack.prefab");
             // a short, quick release instead of the bomb rack's slow 0.5 m slide
             var path = AssetDatabase.GetAssetPath(mountPrefab);
@@ -275,7 +275,7 @@ namespace MiG29Tools
             PrefabUtility.UnloadPrefabContents(root);
             mountPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
 
-            var m = CloneMount("bomb_250_single", $"mig29_{id}_mount", mountPrefab, info, $"mig29_{id}", name + " drop tank",
+            var m = CloneMount("bomb_250_single", $"mig29smt_{id}_mount", mountPrefab, info, $"mig29smt_{id}", name + " drop tank",
                 mass: fullMass + pylonMass, emptyMass: pylonMass, drag: drag);
             var mso = new SerializedObject(m);
             mso.FindProperty("emptyDrag").floatValue = 0.01f;
@@ -297,7 +297,7 @@ namespace MiG29Tools
 
         static ScriptableObject BuildGun()
         {
-            var info = Clone("Gun27mm_Autocannon", "mig29_GSh301_info");
+            var info = Clone("Gun27mm_Autocannon", "mig29smt_GSh301_info");
             var iso = new SerializedObject(info);
             iso.FindProperty("weaponName").stringValue = "GSh-30-1 Cannon";
             iso.FindProperty("shortName").stringValue = "GUN 30MM";
@@ -310,7 +310,7 @@ namespace MiG29Tools
             iso.FindProperty("visibilityWhenFired").floatValue = 2500f;
             iso.ApplyModifiedPropertiesWithoutUndo();
 
-            var go = Instance("gun_27mm_internal", "mig29_GSh301");
+            var go = Instance("gun_27mm_internal", "mig29smt_GSh301");
             var gso = new SerializedObject(go.GetComponentInChildren(T("Gun"), true));
             gso.FindProperty("info").objectReferenceValue = info;
             gso.FindProperty("fireRate").floatValue = 1650f;
@@ -322,11 +322,11 @@ namespace MiG29Tools
             gso.ApplyModifiedPropertiesWithoutUndo();
             var prefab = SavePrefab(go, $"{Dir}/mig29_GSh301.prefab");
 
-            var m = Clone("gun_27mm_internal", "mig29_GSh301_mount");
+            var m = Clone("gun_27mm_internal", "mig29smt_GSh301_mount");
             var mso = new SerializedObject(m);
             mso.FindProperty("prefab").objectReferenceValue = prefab;
             mso.FindProperty("info").objectReferenceValue = info;
-            mso.FindProperty("jsonKey").stringValue = "mig29_gsh301_internal";
+            mso.FindProperty("jsonKey").stringValue = "mig29smt_gsh301_internal";
             mso.FindProperty("mountName").stringValue = "30mm GSh-30-1 (150 rds)";
             mso.FindProperty("ammo").intValue = 150;
             mso.ApplyModifiedPropertiesWithoutUndo();
@@ -397,7 +397,7 @@ namespace MiG29Tools
         static Texture2D ImportTex(string file, bool srgb, bool normal)
         {
             var dst = $"{Dir}/{file}";
-            File.Copy(Path.Combine("MiG29Source", file), dst, true);
+            File.Copy(Path.Combine("MiG29SMTSource", file), dst, true);
             AssetDatabase.ImportAsset(dst, ImportAssetOptions.ForceUpdate);
             var imp = (TextureImporter)AssetImporter.GetAtPath(dst);
             imp.textureType = normal ? TextureImporterType.NormalMap : TextureImporterType.Default;

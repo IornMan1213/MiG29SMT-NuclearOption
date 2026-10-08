@@ -5,7 +5,7 @@ Notes come from that version's CHANGELOG.md section. The token is never printed.
 """
 import json, os, re, subprocess, sys, urllib.request
 
-REPO = "IornMan1213/MiG29-NuclearOption"
+REPO = "IornMan1213/MiG29SMT-NuclearOption"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -25,10 +25,10 @@ def main():
     log = open(os.path.join(ROOT, "CHANGELOG.md"), encoding="utf-8").read()
     m = re.search(rf"^## {re.escape(ver)}[^\n]*\n(.*?)(?=^## )", log, re.S | re.M)
     notes = m.group(1).strip() if m else ""
-    nobp = os.path.join(ROOT, "builds", f"MiG-29 Fulcrum_{ver}.nobp")
+    nobp = os.path.join(ROOT, "builds", f"MiG-29SMT_{ver}.nobp")
     dll = os.path.join(ROOT, "builds", f"MiG29Instruments_{ver}.dll")
-    extra = " and `MiG29Instruments.dll` (both are in the zip)" if os.path.exists(dll) else ""
-    notes += (f"\n\n**Install:** put `MiG-29 Fulcrum_{ver}.nobp`{extra} in `BepInEx/plugins/MiG-29_Fulcrum/` (delete older versions). "
+    extra = " and `MiG29SMTInstruments.dll` (both are in the zip)" if os.path.exists(dll) else ""
+    notes += (f"\n\n**Install:** put `MiG-29SMT_{ver}.nobp`{extra} in `BepInEx/plugins/MiG-29SMT/` (delete older versions). "
               "Requires BepInEx 5 and Blueprinter 2.0.1+.\n\nThe mod contains a modified version of \"MiG-29 - Fighter Jet - Free\" by bohmerang "
               "(CC BY-NC-SA 4.0).")
     tok = token()
@@ -38,12 +38,12 @@ def main():
     print("release:", rel["html_url"])
     base = rel["upload_url"].split("{")[0]
     # the all-in-one zip must be the first asset (NOMNOM / NOMM use assets[0]); GitHub lists assets by name, and
-    # "MiG-29-Fulcrum_x.zip" sorts before "MiG-29.Fulcrum_x.nobp" and "MiG29Instruments.dll"
-    zipf = os.path.join(ROOT, "builds", f"MiG-29-Fulcrum_{ver}.zip")
+    # "MiG-29SMT-Mod_x.zip" sorts before "MiG-29.Fulcrum_x.nobp" and "MiG29SMTInstruments.dll"
+    zipf = os.path.join(ROOT, "builds", f"MiG-29SMT-Mod_{ver}.zip")
     uploads = [(zipf, os.path.basename(zipf), "application/zip")] if os.path.exists(zipf) else []
     uploads += [(nobp, os.path.basename(nobp), "application/octet-stream")]
     if os.path.exists(dll):   # published under the name it needs in the game folder
-        uploads.append((dll, "MiG29Instruments.dll", "application/octet-stream"))
+        uploads.append((dll, "MiG29SMTInstruments.dll", "application/octet-stream"))
     for path, name, ctype in uploads:
         a = api("POST", base + "?name=" + urllib.request.quote(name), tok, open(path, "rb").read(), ctype)
         print("asset:", a["browser_download_url"], a["size"])

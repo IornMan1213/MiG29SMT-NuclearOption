@@ -1,6 +1,6 @@
-"""Renders the gear poses dumped by MiG29Tools.MiG29GearDump (MiG29Out/gear_<pose>.json): skin grey, MiG doors blue, KR-67 gear
+"""Renders the gear poses dumped by MiG29SMTTools.MiG29GearDump (MiG29SMTOut/gear_<pose>.json): skin grey, MiG doors blue, KR-67 gear
 orange, landing-light pieces yellow. Back faces are culled as in Unity. Workbench renders.
-blender -b --python gear_look.py -- <MiG29Out dir> <out dir> [poses comma list] [views comma list]"""
+blender -b --python gear_look.py -- <MiG29SMTOut dir> <out dir> [poses comma list] [views comma list]"""
 import bpy, os, sys, math, json
 from mathutils import Vector
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))

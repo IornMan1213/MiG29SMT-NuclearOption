@@ -1,9 +1,9 @@
 """Plugin retraction path for the main legs, scored by where the leg crosses the closed skin. The leg may only come through the bay
 openings: the model's door strip under the wing root, plus a side door at the top of the intake trunk (where the real MiG-29's main
 bay door is; tools/main_bay_door.py cuts it). Every other crossing of the skin, in any pose, is visible clipping.
-Path (MiG29Instruments GearPathDriver): rotation about the mount x axis yawed by yaw1 up to keyframe K (fold1, strut twist strut1),
+Path (MiG29SMTInstruments GearPathDriver): rotation about the mount x axis yawed by yaw1 up to keyframe K (fold1, strut twist strut1),
 then the shortest rotation on to the skewed-hinge stow of main_gear_search2.json (what the game reaches without the plugin).
-python main_gear_path3.py <MiG29Source> <MiG29Out>  ->  MiG29Out/main_gear_path3.json"""
+python main_gear_path3.py <MiG29SMTSource> <MiG29SMTOut>  ->  MiG29SMTOut/main_gear_path3.json"""
 import json, os, sys, itertools
 import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tools"))

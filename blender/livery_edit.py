@@ -4,7 +4,7 @@ mig29_livery_custom.png (started from the two-tone grey base colour if it does n
 (Image > Save, Alt+S, or accept "save modified images" on File > Save). tools/build_mig29.ps1 ships that PNG as the
 "Fulcrum Custom" livery.
 Blender axes: X = MiG x (left is negative), Y = MiG z (forward), Z = MiG y (up).
-blender -b --python livery_edit.py -- <MiG29Source> <out .blend>"""
+blender -b --python livery_edit.py -- <MiG29SMTSource> <out .blend>"""
 import bpy, json, os, shutil, sys
 
 argv = sys.argv[sys.argv.index("--") + 1:]

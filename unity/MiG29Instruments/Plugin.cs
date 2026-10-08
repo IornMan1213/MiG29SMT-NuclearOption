@@ -3,20 +3,20 @@ using System.Collections.Generic;
 using System.Reflection;
 using BepInEx;
 using BepInEx.Logging;
-using MiG29Tools;
+using MiG29SMTTools;
 using UnityEngine;
 
-namespace MiG29Instruments
+namespace MiG29SMTInstruments
 {
-    // Makes every instrument in the MiG-29 Fulcrum mod's cockpit work. The .nobp carries the moving parts (MiG29_ins_<id> mounts with
-    // a "needle" child, MiG29_lamp_<id> lamps); this plugin finds them on the aircraft you fly and drives them from its live state.
+    // Makes every instrument in the MiG-29 Fulcrum mod's cockpit work. The .nobp carries the moving parts (SMT_ins_<id> mounts with
+    // a "needle" child, SMT_lamp_<id> lamps); this plugin finds them on the aircraft you fly and drives them from its live state.
     // The instruments are visual only. The plugin also gives the MiG's drop tanks their fuel (StoresDriver, Stores.cs): on MiGs
     // simulated on this machine it feeds tank fuel to the internal tanks; releases go through the game's own networked weapon stations.
-    [BepInPlugin("iornman.mig29.instruments", "MiG-29 Instruments", ModVersion)]
+    [BepInPlugin("iornman.mig29smt.instruments", "MiG-29SMT Instruments", ModVersion)]
     public class MiG29InstrumentsPlugin : BaseUnityPlugin
     {
         // same as MiG29Builder.Version (build_mig29.ps1 checks): mod managers match the release version against this DLL's version
-        public const string ModVersion = "0.9.0";
+        public const string ModVersion = "0.1.0";
         internal static ManualLogSource Log;
         internal static BepInEx.Configuration.ConfigEntry<float> PanelLighting;
         internal static BepInEx.Configuration.ConfigEntry<BepInEx.Configuration.KeyboardShortcut> JettisonKey;
@@ -29,7 +29,7 @@ namespace MiG29Instruments
         void Awake()
         {
             Log = Logger;
-            new HarmonyLib.Harmony("iornman1213.mig29.instruments").PatchAll(typeof(R27RNoTarget));
+            new HarmonyLib.Harmony("iornman1213.mig29smt.instruments").PatchAll(typeof(R27RNoTarget));
             PanelLighting = Config.Bind("Cockpit", "Night panel lighting", 1f,
                 new BepInEx.Configuration.ConfigDescription("Brightness of the cockpit flood lights at night (0 = off)", new BepInEx.Configuration.AcceptableValueRange<float>(0f, 4f)));
             JettisonKey = Config.Bind("Drop tanks", "Jettison key", new BepInEx.Configuration.KeyboardShortcut(KeyCode.J, KeyCode.LeftControl),
@@ -62,15 +62,15 @@ namespace MiG29Instruments
     {
         float nextScan, nextStoresScan;
         int lastChecked;
-        const string MiG29Key = "mig29_Fulcrum";   // MiG29Builder.JsonKey
+        const string MiG29Key = "mig29smt_Fulcrum";   // MiG29Builder.JsonKey
 
         bool dev;
 
-        void Start() => dev = System.IO.File.Exists(System.IO.Path.Combine(BepInEx.Paths.BepInExRootPath, "mig29_dump.flag"));
+        void Start() => dev = System.IO.File.Exists(System.IO.Path.Combine(BepInEx.Paths.BepInExRootPath, "mig29smt_dump.flag"));
 
         void Update()
         {
-            if (dev)   // developer hotkeys (only with BepInEx/mig29_dump.flag): F10 outside orbit camera, F11 back to the cockpit
+            if (dev)   // developer hotkeys (only with BepInEx/mig29smt_dump.flag): F10 outside orbit camera, F11 back to the cockpit
             {
                 var cams = SceneSingleton<CameraStateManager>.i;
                 if (cams != null && Input.GetKeyDown(KeyCode.F10)) cams.SwitchState(cams.orbitState);
@@ -127,7 +127,7 @@ namespace MiG29Instruments
                 if (id == lastChecked) return;
                 lastChecked = id;
                 MiG29InstrumentsPlugin.Log.LogInfo($"player aircraft: {ac.name}");
-                if (System.IO.File.Exists(System.IO.Path.Combine(BepInEx.Paths.BepInExRootPath, "mig29_dump.flag")))
+                if (System.IO.File.Exists(System.IO.Path.Combine(BepInEx.Paths.BepInExRootPath, "mig29smt_dump.flag")))
                 {
                     var sb = new System.Text.StringBuilder();
                     foreach (var t in InstrumentDriver.Root(ac).GetComponentsInChildren<Transform>(true))
@@ -137,11 +137,13 @@ namespace MiG29Instruments
                     }
                     foreach (var cam in Resources.FindObjectsOfTypeAll<Camera>())
                         sb.AppendLine($"CAMERA {cam.name} enabled={cam.enabled} near={cam.nearClipPlane} mask={cam.cullingMask:X8} cockpitLayer={(cam.cullingMask & (1 << 3)) != 0} depth={cam.depth} clear={cam.clearFlags}");
-                    System.IO.File.WriteAllText(System.IO.Path.Combine(BepInEx.Paths.BepInExRootPath, "mig29_dump.txt"), sb.ToString());
+                    System.IO.File.WriteAllText(System.IO.Path.Combine(BepInEx.Paths.BepInExRootPath, "mig29smt_dump.txt"), sb.ToString());
                 }
                 if (ac.GetComponent<InstrumentDriver>() != null) return;
+                // only the MiG-29SMT itself: the MiG-29 mod carries similarly named instruments
+                if (((Unit)ac).definition == null || ((Unit)ac).definition.jsonKey != MiG29Key) return;
                 foreach (var t in InstrumentDriver.Root(ac).GetComponentsInChildren<Transform>(true))
-                    if (t.name == "MiG29_ins_asi_kmh")
+                    if (t.name == "SMT_ins_asi_kmh")
                     {
                         ac.gameObject.AddComponent<InstrumentDriver>();
                         return;
@@ -175,6 +177,9 @@ namespace MiG29Instruments
         float oxygen = 150f, hydraulic, egtL = 15f, egtR = 15f;
         bool first = true;
 
+        // this frame's aircraft state (the flight display reads it)
+        public FlightState State => st;
+
         void Start()
         {
             try { Bind(); }
@@ -190,9 +195,9 @@ namespace MiG29Instruments
             var root = Root(ac);
             foreach (var t in root.GetComponentsInChildren<Transform>(true))
             {
-                if (t.name.StartsWith("MiG29_ins_"))
+                if (t.name.StartsWith("SMT_ins_"))
                 {
-                    var id = t.name.Substring("MiG29_ins_".Length);
+                    var id = t.name.Substring("SMT_ins_".Length);
                     var n = t.Find("needle");
                     if (n == null) continue;
                     if (id == "adi_ball") { ball = n; continue; }
@@ -200,8 +205,8 @@ namespace MiG29Instruments
                     if (!MiG29InstrumentMath.Needles.TryGetValue(id, out var f)) continue;
                     needles.Add(new Needle { id = id, t = n, f = f, wraps = id.StartsWith("alt_") || id == "hsi_card" || id.StartsWith("clock"), k = MiG29InstrumentMath.Damping(id) });
                 }
-                else if (t.name.StartsWith("MiG29_lamp_") && t.TryGetComponent<Renderer>(out var r))
-                    lamps[t.name.Substring("MiG29_lamp_".Length)] = r;
+                else if (t.name.StartsWith("SMT_lamp_") && t.TryGetComponent<Renderer>(out var r))
+                    lamps[t.name.Substring("SMT_lamp_".Length)] = r;
             }
             SetupLampMaterial();
             var cockpit = root.GetComponentInChildren<Cockpit>(true);
@@ -214,13 +219,14 @@ namespace MiG29Instruments
             ac.onRadarWarning += OnRadarWarning;
             canopies = CanopiesField?.GetValue(ac) as Canopy[];
             // night lighting: a soft flood under the glareshield and one over the consoles, faded in after dusk
-            var adi = root.Find("MiG29_ins_adi_ball");
+            var adi = root.Find("SMT_ins_adi_ball");
             if (adi != null)
             {
                 // under the glareshield lip, aimed down the panel; low intensity: the game's exposure adapts to the dark
                 panelLight = MakeLight("MiG29_panel_light", adi.position - adi.forward * 0.10f + adi.up * 0.07f, adi, 0.55f, new Color(1f, 0.55f, 0.42f));
                 consoleLight = MakeLight("MiG29_console_light", adi.position - adi.forward * 0.55f - adi.up * 0.05f, adi, 0.8f, new Color(1f, 0.5f, 0.4f));
             }
+            PfdDriver.Setup(this, root);
             MiG29InstrumentsPlugin.Log.LogInfo($"MiG-29 instruments on {ac.name}: {needles.Count} needles, ball {(ball != null)}, {lamps.Count} lamps, {engines.Count} engines");
         }
 
@@ -269,7 +275,7 @@ namespace MiG29Instruments
             Material lit;
             if (baseMat != null)
             {
-                lit = new Material(baseMat) { name = "MiG29_lamp_lit" };
+                lit = new Material(baseMat) { name = "SMT_lamp_lit" };
                 lit.SetTexture("_BaseMap", atlas); lit.SetTexture("_EmissionMap", atlas);
                 lit.SetColor("_BaseColor", Color.white); lit.SetColor("_EmissionColor", Color.white * 1.6f);
                 lit.EnableKeyword("_EMISSION");
@@ -279,7 +285,7 @@ namespace MiG29Instruments
             {
                 var sh = Shader.Find("Universal Render Pipeline/Unlit");
                 if (sh == null) return;
-                lit = new Material(sh) { name = "MiG29_lamp_lit" };
+                lit = new Material(sh) { name = "SMT_lamp_lit" };
                 lit.SetTexture("_BaseMap", atlas);
             }
             foreach (var r in lamps.Values) { r.sharedMaterial = lit; r.enabled = false; }
@@ -381,7 +387,7 @@ namespace MiG29Instruments
 
         int errors;
         float nextLog, rawPower;
-        static readonly bool Dev = System.IO.File.Exists(System.IO.Path.Combine(BepInEx.Paths.BepInExRootPath, "mig29_dump.flag"));
+        static readonly bool Dev = System.IO.File.Exists(System.IO.Path.Combine(BepInEx.Paths.BepInExRootPath, "mig29smt_dump.flag"));
 
         void LateUpdate()
         {

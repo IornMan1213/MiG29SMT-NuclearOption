@@ -1,6 +1,6 @@
 """From-scratch RD-33 exhaust nozzles for the MiG-29 (replace the model's low-poly nozzle cans).
 
-Output: MiG29Source/nozzles.json and MiG29Source/nozzle_atlas.png.
+Output: MiG29SMTSource/nozzles.json and MiG29SMTSource/nozzle_atlas.png.
 Geometry is in the nozzle's local frame (Unity axes): origin on the engine axis at the nacelle seam, +z forward (toward the nose),
 +y up, +x right. The engine axis toes out and down about 2 deg on the MiG (blender/analysis: fitted duct centres); Unity places
 the frame (MiG29Nozzles.cs). Moving parts are single petals in their own hinge frame, so the instruments plugin can open and close
@@ -13,7 +13,7 @@ import json, math, os, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
-OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.environ["BLUEPRINTER_PROJECT"], "MiG29Source")
+OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.environ["BLUEPRINTER_PROJECT"], "MiG29SMTSource")
 
 # MiG frame, measured on the model (blender/analysis/nozzle_look.py and the ray-cast fits in DEVLOG)
 AXIS_ROOT = (0.869, -0.265, -2.80)                 # right engine; the left mirrors x

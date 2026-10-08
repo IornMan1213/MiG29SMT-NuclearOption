@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace MiG29Tools
+namespace MiG29SMTTools
 {
     // MiG-29 9.12 countermeasures: two BVP-30-26M dispensers in the tail booms, just inboard of the fins, each with 30 26 mm
     // cartridges fired upward. One dispenser load is PPI-26 infrared flares, the other PPR-26 chaff (60 cartridges in all).
@@ -15,7 +15,7 @@ namespace MiG29Tools
     // Names sort IR Flares < Radar Chaff < Radar ECM: the game pops "flares" from the first station, so flares must stay first.
     public static class MiG29Countermeasures
     {
-        const string Dir = "Assets/Blueprinter/Mods/mig29/weapons";
+        const string Dir = "Assets/Blueprinter/Mods/mig29smt/weapons";
         const string Mat = "Assets/Blueprinter/_donotship/Material/";
 
         public const int Flares = 30, Chaff = 30;
@@ -93,7 +93,7 @@ namespace MiG29Tools
         // faint grey bloom. Particles live in the chaff object's space so they move with it (and with the game's floating origin).
         static GameObject BuildChaffPrefab()
         {
-            var go = new GameObject("mig29_chaff");
+            var go = new GameObject("mig29smt_chaff");
             var ps = go.AddComponent<ParticleSystem>();
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             ConfigureGlints(ps);
