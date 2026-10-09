@@ -1,10 +1,13 @@
 # Changelog
 
-## SMT 0.1.0 (work in progress)
+## SMT 0.1.0
 Forked from the MiG-29 Fulcrum mod 0.9.0 as a separate mod (own keys, weapons, plugin and install folder, so both install together).
-- Glass cockpit: two MFI-10 colour displays (flight display drawn live by the plugin; tactical display), up-front control panel,
-  standby airspeed, altimeter and attitude ball. The 9.12's round flight instruments, HSI, radar altimeter, clock, oxygen and cabin
-  gauges are gone.
+- Glass cockpit: two MFI-10 colour displays, up-front control panel, standby airspeed, altimeter and attitude ball. The left
+  display is the flight display, drawn live by the plugin. The right one shows the whole tactical display across the top and an
+  engine page below it (RPM and exhaust temperature, fuel, hydraulics, warnings and cautions as text).
+- A radar-warning screen replaces the 9.12's SPO-15 lamp panel; a small fuel and clock readout and one master-caution light replace
+  the round engine gauges and the caution lamp panel. The 9.12's round flight instruments, HSI, radar altimeter, clock, oxygen and
+  cabin gauges are gone.
 - The SMT's dorsal spine (hump) raised behind the canopy; internal fuel 4,460 kg.
 - R-77 (RVV-AE) active radar missile with lattice fins, on AKU-170 launchers (inner and middle pylons). Preset loadouts
   built around it (four R-77 and two R-73 by default).
