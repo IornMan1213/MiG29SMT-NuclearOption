@@ -686,11 +686,18 @@ def screen_quad(pid, c, right, up, uvrect):
 # 0..1 texture.
 pc, pr, pu = mfd_bezel(-MFD_U, MFD_V)
 screen_quad("pfd", pc, pr, pu, rect_uv("paint_black", 6))
-# right: the game's tactical display. Its render texture's main area (u 0..0.75, v 0.25..1) is 2.1:1; the middle 3:4 of it fills
-# the portrait screen
+# right: the game's tactical display, whole and at its own 2.1:1 shape (its render texture's main area, u 0..0.75, v 0.25..1) across
+# the top of the screen; cropping its middle to fill the portrait screen cut off the display's centre and range rings (user, SMT
+# 0.1.0). Below it the engine and caution page the plugin draws ("eng").
 tc, tr_, tu = mfd_bezel(MFD_U, MFD_V)
-_w = 0.75 * (MFD_SW / MFD_SH) / 2.1
-screen_quad("screen", tc, tr_, tu, (0.375 - _w / 2, 0.25, 0.375 + _w / 2, 1.0))
+TAC_H = MFD_SW / 2.1
+def sub_quad(pid, c, right, up, v0, v1, uvrect):
+    """The part of a screen between fractions v0..v1 of its height (0 = bottom)."""
+    y0, y1 = -MFD_SH / 2 + v0 * MFD_SH, -MFD_SH / 2 + v1 * MFD_SH
+    q = [c - right * MFD_SW / 2 + up * y0, c + right * MFD_SW / 2 + up * y0, c + right * MFD_SW / 2 + up * y1, c - right * MFD_SW / 2 + up * y1]
+    quad_uv(part(pid), [tuple(x) for x in q], uvrect)
+sub_quad("screen", tc, tr_, tu, 1 - TAC_H / MFD_SH, 1.0, (0.0, 0.25, 0.75, 1.0))
+sub_quad("eng", tc + tu * 0.0002, tr_, tu, 0.0, 1 - TAC_H / MFD_SH - 0.012, rect_uv("paint_black", 6))
 
 # up-front control panel: a keypad either side of a small data window
 c, n, right, up = panel_frame(0.0, 0.283, 0.0)
@@ -735,17 +742,19 @@ cylinder(pid, tuple(piv + up * 0.034 + n * 0.014), tuple(right), 0.009, 0.010, "
 cylinder(pid, tuple(piv + up * 0.034 + n * 0.014), tuple(right), 0.0095, 0.004, "red", 14)
 INS[pid] = (piv, n, up)
 
-# left wing: SPO-15 radar warning receiver (square display, lit sector / power / type lamps), gear lights, small gauges
-SPO_U, SPO_V, SPO_S = -0.29, 0.255, 0.086
-plate(SPO_U, SPO_V, SPO_S + 0.008, SPO_S + 0.008, "paint_black", off=0.0035)
-plate(SPO_U, SPO_V, SPO_S, SPO_S, "g_spo", off=0.0042)
-spo = ATLAS["layout"]["spo"]
-for k, (brg, x, y, sz) in enumerate(spo["sectors"]):
-    lamp(f"spo_s{k}", SPO_U + (x - 0.5) * SPO_S, SPO_V + (0.5 - y) * SPO_S, sz * SPO_S, sz * SPO_S, rect_uv("lamp_lit_red", 6), 0.0050)
-for k, (x, y, w, h) in enumerate(spo["power"]):
-    lamp(f"spo_p{k}", SPO_U + (x - 0.5) * SPO_S, SPO_V + (0.5 - y) * SPO_S, w * SPO_S, h * SPO_S, rect_uv("lamp_lit_amber", 6), 0.0050)
-for k, (t, x, y, w, h) in enumerate(spo["types"]):
-    lamp(f"spo_t{k}", SPO_U + (x - 0.5) * SPO_S, SPO_V + (0.5 - y) * SPO_S, w * SPO_S * 0.8, h * SPO_S * 0.8, rect_uv("lamp_lit_amber", 6), 0.0050)
+def small_screen(pid, u, v, w, h):
+    """A small colour display in a black bezel on the panel face (the plugin draws on the screen quad)."""
+    c, n, right, up = panel_frame(u, v, 0.0)
+    slab(c, n, right, up, w + 0.016, h + 0.016, 0.012, "black")
+    flat("tub", c + n * 0.0123, right, up, w + 0.004, h + 0.004, "dgrey")
+    q = [c + n * 0.0126 - right * w / 2 - up * h / 2, c + n * 0.0126 + right * w / 2 - up * h / 2,
+         c + n * 0.0126 + right * w / 2 + up * h / 2, c + n * 0.0126 - right * w / 2 + up * h / 2]
+    quad_uv(part(pid), [tuple(x) for x in q], rect_uv("paint_black", 6))
+
+
+# left wing: radar warning display (the SMT's L-150 'Pastel' screen in place of the 9.12's SPO-15 lamp panel), gear lights and lever,
+# standby airspeed and altimeter
+small_screen("rwr", -0.29, 0.255, 0.082, 0.082)
 GEAR_U, GEAR_V, GW, GH = -0.29, 0.163, 0.11, 0.055
 plate(GEAR_U, GEAR_V, GW, GH, "gear_plate")
 for gid, x, y, sz in ATLAS["layout"]["gear"]:
@@ -755,19 +764,15 @@ for gid, x, y, sz in ATLAS["layout"]["gear"]:
 # standby airspeed and altimeter (the 9.12's dials, small)
 f = gauge(-0.255, 0.075, 0.054, "g_asi"); needle("asi_kmh", f, 0.86, 0.10)
 f = gauge(-0.325, 0.075, 0.054, "g_alt"); needle("alt_km", f, 0.52, 0.16); needle("alt_m", f, 0.88, 0.09, z=0.0122)
-# right wing: standby attitude ball (above), engine instruments, caution panel
-f = gauge(0.255, 0.165, 0.062, "g_rpm"); needle("rpm_l", f, 0.86, 0.09); needle("rpm_r", f, 0.72, 0.09, "yellow", z=0.0122)
-f = gauge(0.33, 0.165, 0.062, "g_egt"); needle("egt_l", f, 0.86, 0.09); needle("egt_r", f, 0.72, 0.09, "yellow", z=0.0122)
-f = gauge(0.255, 0.091, 0.05, "g_fuel"); needle("fuel", f, 0.84, 0.11)
-f = gauge(0.325, 0.091, 0.05, "g_hyd"); needle("hyd", f, 0.84, 0.11)
-CAU_U, CAU_V, CAU_W, CAU_H = 0.29, 0.034, 0.15, 0.040
-plate(CAU_U, CAU_V, CAU_W, CAU_H, "caution")
+# right wing: standby attitude ball (above) and a small digital readout (fuel, clock, master caution) in place of the 9.12's round
+# engine gauges and caution lamp panel: engines and cautions are on the right MFD's lower page now
+small_screen("data", 0.27, 0.115, 0.095, 0.060)
+CAU_U, CAU_V = 0.27, 0.040
+c, n, right, up = panel_frame(CAU_U, CAU_V, 0.0)
+slab(c, n, right, up, 0.050, 0.022, 0.010, "black")
 cl = ATLAS["layout"]["caution"]
-for k, cid in enumerate(cl["ids"]):
-    i, j = k % cl["cols"], k // cl["cols"]
-    x0, x1 = i / cl["cols"], (i + 1) / cl["cols"]; y0, y1 = j / cl["rows"], (j + 1) / cl["rows"]
-    lamp(f"cau_{cid}", CAU_U + ((x0 + x1) / 2 - 0.5) * CAU_W, CAU_V + (0.5 - (y0 + y1) / 2) * CAU_H, CAU_W / cl["cols"], CAU_H / cl["rows"],
-         sub_uv("caution_lit", x0, y0, x1, y1), 0.0040)
+k = cl["ids"].index("master"); i, j = k % cl["cols"], k // cl["cols"]
+lamp("cau_master", CAU_U, CAU_V, 0.040, 0.014, sub_uv("caution_lit", i / cl["cols"], j / cl["rows"], (i + 1) / cl["cols"], (j + 1) / cl["rows"]), 0.0110)
 
 # panel trim: black edge strips around the centre section, screws, setting knobs
 def strip(u0, v0, u1, v1, w=0.008, off=0.004):
@@ -1177,7 +1182,8 @@ def export_part(part, sign, material, pivot=None):
 sign = winding_sign()
 parts_out, meshes = [], {}
 for name, mat, pivot in (("tub", "cockpit", None), ("glass", "glass", None), ("seat", "cockpit", SEAT_O), ("stick", "cockpit", STICK_O),
-                         ("throttle", "cockpit", THR_O), ("screen", "screen", None), ("lamps", "lamps", None), ("pfd", "cockpit", None)):
+                         ("throttle", "cockpit", THR_O), ("screen", "screen", None), ("lamps", "lamps", None), ("pfd", "cockpit", None),
+                         ("eng", "cockpit", None), ("rwr", "cockpit", None), ("data", "cockpit", None)):
     o, me = export_part(PARTS[name], sign, mat, pivot)
     parts_out.append(o); meshes[name] = me
 for name in sorted(k for k in PARTS if k.startswith("ins_") or k.startswith("lamp_")):

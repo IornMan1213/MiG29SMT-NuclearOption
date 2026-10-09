@@ -226,7 +226,7 @@ namespace MiG29SMTInstruments
                 panelLight = MakeLight("MiG29_panel_light", adi.position - adi.forward * 0.10f + adi.up * 0.07f, adi, 0.55f, new Color(1f, 0.55f, 0.42f));
                 consoleLight = MakeLight("MiG29_console_light", adi.position - adi.forward * 0.55f - adi.up * 0.05f, adi, 0.8f, new Color(1f, 0.5f, 0.4f));
             }
-            PfdDriver.Setup(this, root);
+            ScreenDriver.Setup(this, root);
             MiG29InstrumentsPlugin.Log.LogInfo($"MiG-29 instruments on {ac.name}: {needles.Count} needles, ball {(ball != null)}, {lamps.Count} lamps, {engines.Count} engines");
         }
 
