@@ -1,5 +1,17 @@
 # Changelog
 
+## SMT 0.1.1
+The MiG-29 Fulcrum mod's 0.9.1 changes, brought to the SMT.
+- **Cobra button.** Ctrl+C turns Stability Assist (the pitch, g and angle-of-attack limiters) off for 4 seconds for a Cobra or
+  another post-stall move, then back on; press again to end early. Works below about 630 km/h. Key (a joystick button works
+  too) and time in Configuration Manager under MiG-29SMT Instruments > Flight.
+- **The airframe no longer comes apart under high g**: the physics joints holding the parts together are solved five times as
+  precisely, so the wings stay on the fuselage in a hard pull.
+- **Wing vapour** forms as a sheet over the whole upper wing at high angle of attack, as on the real jet.
+- **5% more thrust**: 51.9 kN dry and 89.7 kN with afterburner per engine.
+- **Radar signature**: radar size 0.15 clean (was the KR-67's stealth-fighter 0.0015), a little below the MiG-29's 0.2 for the
+  SMT's radar-absorbent treatment. Stores still add to it.
+
 ## SMT 0.1.0
 Forked from the MiG-29 Fulcrum mod 0.9.0 as a separate mod (own keys, weapons, plugin and install folder, so both install together).
 - Glass cockpit: two MFI-10 colour displays, up-front control panel, standby airspeed, altimeter and attitude ball. The left
