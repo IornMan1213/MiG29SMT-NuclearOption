@@ -1,5 +1,14 @@
 # Changelog
 
+## SMT 0.1.2
+The MiG-29 Fulcrum mod's 0.9.2 changes, brought to the SMT.
+- **Instrument panel side wings enlarged** to fill the space out to the cockpit walls and up under the glareshield, with a border
+  round everything on them; the small holes to the sky at the panel's top corners are closed.
+- **Side console fronts level**, so they no longer hide the bottom of the dash.
+- **No more ghost markings**: the source model's stars, board numbers, fin badges and stencils are out of the skin's shine
+  texture, so they no longer show through the liveries.
+- **Dark patches fixed**: faces on the engine nacelles and LERX with inward shading normals now shade correctly.
+
 ## SMT 0.1.1
 The MiG-29 Fulcrum mod's 0.9.1 changes, brought to the SMT.
 - **Cobra button.** Ctrl+C turns Stability Assist (the pitch, g and angle-of-attack limiters) off for 4 seconds for a Cobra or
