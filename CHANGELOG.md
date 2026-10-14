@@ -3,7 +3,8 @@
 ## SMT 0.1.2
 The MiG-29 Fulcrum mod's 0.9.2 changes, brought to the SMT.
 - **Damage like the stock jets.** Hit parts gather soot, dented panels and black scorched patches that spread as they take more
-  damage, and a part that is shot out breaks off (a damaged part used to just go flat black). The skin never turns see-through.
+  damage, burnt-through holes like the stock jets', and a part that is shot out breaks off (a damaged part used to just go flat
+  black). Behind every hole is solid structure a few centimetres under the skin, so you never see through the jet.
 - **Clean break-up and an inside.** Parts break off along straight edges that follow the jet's hit zones instead of tearing
   away as fans of spikes, and behind the skin every part now has the game's own interior structure (honeycomb in the radome)
   with the RD-33 engines in the nacelles, so broken-off parts show the jet's insides instead of the sky.
