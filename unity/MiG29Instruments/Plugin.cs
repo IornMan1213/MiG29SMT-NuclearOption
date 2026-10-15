@@ -406,7 +406,15 @@ namespace MiG29SMTInstruments
         JetNozzle[] nozzles;
         void GatherSignature()
         {
-            if (nozzles == null) nozzles = ac.GetComponentsInChildren<JetNozzle>(true);
+            // in flight every part is its own physics root, not under the aircraft: the nozzles come from the unit's part list (found
+            // under the aircraft only, the IR reading stayed at zero; user screenshot, SMT 0.2.0)
+            if (nozzles == null || nozzles.Length == 0)
+            {
+                var found = new List<JetNozzle>(ac.GetComponentsInChildren<JetNozzle>(true));
+                foreach (var part in ac.partLookup)
+                    if (part != null) foreach (var nz in part.GetComponentsInChildren<JetNozzle>(true)) if (!found.Contains(nz)) found.Add(nz);
+                nozzles = found.ToArray();
+            }
             float heat = 0f, max = 0f;
             foreach (var n in nozzles)
             {
