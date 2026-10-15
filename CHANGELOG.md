@@ -16,10 +16,11 @@
     flaps, gear, weapon armed, gun, radar lock, missile inbound, hydraulics, engine trouble, afterburner, intake doors, low fuel,
     empty drop tanks, low flares/chaff and low altitude.
 - **Strike role.** The SMT now carries the real jet's precision air-to-ground weapons:
-  - **Kh-29L**: heavy laser-guided missile with a 320 kg warhead, for hardened and large targets (inner pylons).
+  - **Kh-29L**: heavy laser-guided missile with a 320 kg warhead, for hardened and large targets (inner pylons). True laser
+    homing: it rides the laser spot on a target the SMT lases (lock it) or a friendly designator lases.
   - **Kh-31P**: ramjet anti-radiation missile, over three times the speed of sound, for SAM and ship radars (inner and middle
     pylons).
-  - **KAB-500L**: 500 kg laser-guided bomb (inner pylons).
+  - **KAB-500L**: 500 kg laser-guided bomb (inner pylons), homing on the laser spot like the Kh-29L.
   - New preset loadouts: Precision Strike (Kh-29L / KAB-500L / R-73) and SEAD (Kh-31P / R-77 / R-73).
 - **Two SMT liveries**: VKS Grey 26 (modern Russian two-tone grey splinter) and Dark Grey 52.
 - **Slimmer windscreen bow** that hugs the glass, with smaller mirrors: a much clearer view out. A streaky second arch under it

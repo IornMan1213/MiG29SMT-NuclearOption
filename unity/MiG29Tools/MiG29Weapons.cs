@@ -211,7 +211,18 @@ namespace MiG29SMTTools
             // ---------- strike stores (the SMT's air-to-ground role): each on the stock weapon it plays like, so the game's targeting,
             // guidance and AI use them as they do the stock one; the real weapon's mass, warhead and motor ----------
             // Kh-29L: heavy laser-guided missile, 680 kg with a 320 kg warhead, 10 km class (stock AGM_heavy base)
-            var kh29 = MakeMissile("AGM_heavy", "mig29smt_Kh29L", meshes["KH29L"], mat, length: 3.90f, radius: 0.19f, seekerFrom: null, seekerType: null);
+            // Laser homing (the stock laser rocket's LaserSeeker, in place of the AGM_heavy's optical seeker, which showed it as an optical
+            // missile; user, SMT 0.2.0): it homes on a target lased by the SMT's own designator (the KR-67's, one target out to 15 km) or by
+            // any friendly designator, inside its seeker cone
+            var kh29 = MakeMissile("AGM_heavy", "mig29smt_Kh29L", meshes["KH29L"], mat, length: 3.90f, radius: 0.19f, seekerFrom: "Rocket2", seekerType: "LaserSeeker");
+            TuneSeeker(kh29, "LaserSeeker", so =>
+            {
+                so.FindProperty("maxSeekerAngle").floatValue = 15f;      // the 24N1 seeker's wider field of view than a rocket's
+                so.FindProperty("errorRate").floatValue = 3f;
+                so.FindProperty("maxTargetSpeed").floatValue = 40f;      // vehicles and ships
+                so.FindProperty("selfDestructAtSpeed").floatValue = 60f; // glides on after burnout: only gives up when nearly stalled
+                so.FindProperty("guidanceDelay").floatValue = 0.5f;
+            });
             Tune(kh29, so =>
             {
                 so.FindProperty("mass").floatValue = 680f;
@@ -231,8 +242,9 @@ namespace MiG29SMTTools
             });
             SetDefinition(kh29Prefab, kh29Def);
             var kh29Info = CloneInfo("AGM_heavy", "mig29smt_Kh29L_info", kh29Prefab, "Kh-29L", "Kh-29L",
-                "Heavy laser-guided missile, 320 kg warhead. Hardened and large targets out to about 10 km.",
+                "Heavy laser-guided missile, 320 kg warhead. Lock the target (the SMT lases it, or a friendly designator does) and fire: it homes on the laser spot. Hardened and large targets out to about 10 km.",
                 minRange: 1500f, maxRange: 12000f, minAlignment: 25f, cost: 0.80f, massPerRound: 680f, infoAsset: "info_AGM_heavy");
+            SetLaserGuided(kh29Info);
             var kh29MountPrefab = MakeMount("AGM_heavy_single", "mig29smt_Kh29L_AKU58", "pylon", "agm1", meshes["AKU58"], meshes["KH29L"], mat,
                 missileY: -0.17f - 0.19f - 0.018f, kh29Info, 3.90f, 0.19f, $"{Dir}/mig29_Kh29L_AKU58.prefab", InnerSlope, 0.95f);
             var kh29Mount = CloneMount("AGM_heavy_single", "mig29smt_Kh29L_mount", kh29MountPrefab, kh29Info, "mig29smt_Kh29L_single", "Kh-29L", mass: 760f, emptyMass: 80f, drag: 0.12f);
@@ -264,8 +276,18 @@ namespace MiG29SMTTools
             var kh31Mount = CloneMount("ARM1_single", "mig29smt_Kh31P_mount", kh31MountPrefab, kh31Info, "mig29smt_Kh31P_single", "Kh-31P", mass: 680f, emptyMass: 80f, drag: 0.12f);
 
             // KAB-500L: laser-guided 500 kg bomb (stock 500 kg glide bomb base)
-            var kab = MakeMissile("bomb_500_glide", "mig29smt_KAB500L", meshes["KAB500L"], mat, length: 3.05f, radius: 0.20f, seekerFrom: null, seekerType: null);
+            // laser homing as the Kh-29L; a bomb has no motor, so never the rocket seeker's self-destruct below 200 m/s (it would burst
+            // soon after release)
+            var kab = MakeMissile("bomb_500_glide", "mig29smt_KAB500L", meshes["KAB500L"], mat, length: 3.05f, radius: 0.20f, seekerFrom: "Rocket2", seekerType: "LaserSeeker");
             Tune(kab, so => so.FindProperty("mass").floatValue = 534f);
+            TuneSeeker(kab, "LaserSeeker", so =>
+            {
+                so.FindProperty("maxSeekerAngle").floatValue = 20f;      // dropped from above: a wide basket
+                so.FindProperty("errorRate").floatValue = 4f;
+                so.FindProperty("maxTargetSpeed").floatValue = 25f;
+                so.FindProperty("selfDestructAtSpeed").floatValue = 0f;
+                so.FindProperty("guidanceDelay").floatValue = 1.0f;      // clear of the jet first
+            });
             var kabPrefab = SavePrefab(kab, $"{Dir}/mig29_KAB500L.prefab");
             var kabDef = CloneDef("Bomb_500_glide", "mig29smt_KAB500L_def", d =>
             {
@@ -277,8 +299,9 @@ namespace MiG29SMTTools
             });
             SetDefinition(kabPrefab, kabDef);
             var kabInfo = CloneInfo("bomb_500_glide", "mig29smt_KAB500L_info", kabPrefab, "KAB-500L", "KAB-500L",
-                "500 kg laser-guided bomb. Release in range of a designated ground target.",
+                "500 kg laser-guided bomb. Lock the target so it is lased (by the SMT or a friendly designator) and release in range: it steers onto the laser spot.",
                 minRange: 1000f, maxRange: 15000f, minAlignment: 60f, cost: 0.35f, massPerRound: 534f, infoAsset: "info_bomb_500_glide");
+            SetLaserGuided(kabInfo);
             var kabMountPrefab = MakeMount("bomb_500_glide_single", "mig29smt_KAB500L_BD3", "pylon", "bomb_500_glide", meshes["BD3"], meshes["KAB500L"], mat,
                 missileY: -0.14f - 0.20f, kabInfo, 3.05f, 0.20f, $"{Dir}/mig29_KAB500L_BD3.prefab");
             var kabMount = CloneMount("bomb_500_glide_single", "mig29smt_KAB500L_mount", kabMountPrefab, kabInfo, "mig29smt_KAB500L_single", "KAB-500L", mass: 570f, emptyMass: 36f, drag: 0.10f);
@@ -656,6 +679,14 @@ namespace MiG29SMTTools
             so.FindProperty("massPerRound").floatValue = massPerRound;
             so.ApplyModifiedPropertiesWithoutUndo();
             return info;
+        }
+
+        // the weapon info's laser flag: the game's HUD then shows the laser-designation state for it, as for the stock laser rockets
+        static void SetLaserGuided(ScriptableObject info)
+        {
+            var so = new SerializedObject(info);
+            so.FindProperty("laserGuided").boolValue = true;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         static GameObject MakeMount(string basePrefab, string name, string pylonChild, string missileChild, Mesh launcher, Mesh missile, Material mat,
