@@ -1,5 +1,5 @@
 """From-scratch MiG-29SMT (9.19) cockpit, modelled procedurally and fitted inside the MiG airframe: the 9.12's tub, consoles and
-seat with the SMT's glass panel (two colour MFDs, up-front control panel, standby instruments).
+seat with the SMT's all-glass panel (three large colour MFDs, up-front control panel, standby display).
 
 blender -b --python blender/cockpit_build.py -- <MiG29SMTSource dir> [<preview out dir>]
   reads  mig29_mesh.json (airframe, for fitting), cockpit_atlas.json (texture cells from tools/cockpit_atlas.py)
@@ -9,8 +9,9 @@ blender -b --python blender/cockpit_build.py -- <MiG29SMTSource dir> [<preview o
      seat     ejection seat, rides on the game's EjectionSeat     (pivot = seat origin)
      stick    centre stick, on the game's joystick transform       (pivot = stick base)
      throttle throttle levers, on the game's throttle transform    (pivot = lever axle)
-     screen   right MFD: the game's tactical display, on the game's tacScreen (UVs = the middle of its render texture's main area)
-     pfd      left MFD's screen quad (the plugin draws the flight display on it)
+     screen   centre MFD, top: the game's tactical display, on the game's tacScreen (UVs = its render texture's main area)
+     pfd, eng, sms, stby, ufc   plugin-drawn screen quads: left MFD, right MFD, centre MFD below the tactical display, standby
+              display, up-front control panel window (MiG29SMTInstruments ScreenDriver; dark without the plugin)
      lamps    master warning lamps, on the game's warningLights    (UVs = the stock warning-light texture cells)
      frames   the MiG model's own windscreen bow, canopy sills and mirrors (MiG skin UVs)
   and preview renders (Eevee) when an output dir is given.
@@ -515,24 +516,33 @@ ORG = Vector((0.0, PB, Z_PANEL - (0.5 * (PT - PB)) * math.tan(TILT)))
 PH = (PT - PB) / math.cos(TILT)                        # panel face height along UP
 
 
-def pp(u, v, off=0.0, yaw_side=0, u_hinge=0.2, yaw=math.radians(28)):
+# side wings' fold toward the pilot: 20 deg (it was 28 with the 9.12-style small instruments; with the large MFDs the wing screens
+# swung hard in perspective and looked stuck on whenever the head moved; user, SMT 0.2.0 preview)
+WING_YAW = 20.0
+# the panel's lower edge, level across centre and wings, 3.5 cm under v = 0 so the three MFDs share one even margin below them
+V_LOW = -0.035
+
+
+def pp(u, v, off=0.0, yaw_side=0, u_hinge=0.2, yaw=math.radians(WING_YAW)):
     """Point on the panel face (Unity tuple). Wings beyond |u| > u_hinge fold toward the pilot by yaw."""
     if yaw_side and abs(u) > u_hinge:
         s = 1 if u > 0 else -1
         du = abs(u) - u_hinge
         base = ORG + Vector((s * u_hinge, 0, 0)) + UP * v
-        dirv = Vector((s * math.cos(yaw), 0, -math.sin(yaw)))
-        nrm = Vector((-s * math.sin(yaw) * math.cos(TILT), math.cos(yaw) * math.sin(TILT), -math.cos(yaw) * math.cos(TILT))).normalized()   # = dirv x UP, toward the pilot
+        # folded about the panel's own up axis (UP), so a wing is a true rectangle square with its displays; folded about the world
+        # vertical it was skewed against the tilted panel and the large wing MFDs sat 6 deg askew, outer corners off the edge (SMT 0.2.0)
+        dirv = Vector((s * math.cos(yaw), 0, 0)) + NRM * math.sin(yaw)
+        nrm = NRM * math.cos(yaw) - Vector((s * math.sin(yaw), 0, 0))   # = dirv x UP, toward the pilot
         q = base + dirv * du + nrm * off
     else:
         q = ORG + Vector((u, 0, 0)) + UP * v + NRM * off
     return (q.x, q.y, q.z)
 
 
-def panel_normal(u, yaw=math.radians(28), u_hinge=0.2):
+def panel_normal(u, yaw=math.radians(WING_YAW), u_hinge=0.2):
     if abs(u) > u_hinge:
         s = 1 if u > 0 else -1
-        return Vector((-s * math.sin(yaw) * math.cos(TILT), math.cos(yaw) * math.sin(TILT), -math.cos(yaw) * math.cos(TILT))).normalized()   # = dirv x UP, toward the pilot
+        return NRM * math.cos(yaw) - Vector((s * math.sin(yaw), 0, 0))   # as pp's wing normal
     return NRM
 
 
@@ -571,8 +581,8 @@ def panel_slab(cs):
 
 
 # panel face: centre + two folded wings, as a 2 cm slab with a box enclosure behind it
-panel_slab([(-0.2, 0.0), (0.2, 0.0), (0.2, PH), (-0.2, PH)])
-WING_V = [PH * k / 8 for k in range(9)]
+panel_slab([(-0.2, V_LOW), (0.2, V_LOW), (0.2, PH), (-0.2, PH)])
+WING_V = [V_LOW + (PH - V_LOW) * k / 8 for k in range(9)]
 WING_OUT = {s: [wing_u_out(s, v) for v in WING_V] for s in (-1, 1)}
 print(f"[cockpit] dash wings out to u = {WING_OUT[-1]} (left), {WING_OUT[1]} (right)")
 for k in range(8):
@@ -582,14 +592,14 @@ for k in range(8):
     panel_slab([(0.2, v0), (r0, v0), (r1, v1), (0.2, v1)])
     panel_slab([(-l0, v0), (-0.2, v0), (-0.2, v1), (-l1, v1)])
 # enclosure behind the panel down to the footwell (keeps the nose interior closed)
-eb = [pp(-WING_OUT[-1][0], 0.0, -0.03, 1), pp(WING_OUT[1][0], 0.0, -0.03, 1)]
+eb = [pp(-WING_OUT[-1][0], V_LOW, -0.03, 1), pp(WING_OUT[1][0], V_LOW, -0.03, 1)]
 poly_paint("tub", [(eb[0][0], eb[0][1], eb[0][2]), (eb[1][0], eb[1][1], eb[1][2]), (eb[1][0], FLOOR + 0.25, Z_FRONT), (eb[0][0], FLOOR + 0.25, Z_FRONT)][::-1], "dgrey")
 
 # lower centre pedestal between the pilot's legs
-ped_top = pp(0, 0.0, 0)
-ped = [(-0.085, PB, ped_top[2]), (0.085, PB, ped_top[2]), (0.085, FLOOR + 0.06, 7.10), (-0.085, FLOOR + 0.06, 7.10)]
+ped_top = pp(0, V_LOW, 0)
+ped = [(-0.085, ped_top[1], ped_top[2]), (0.085, ped_top[1], ped_top[2]), (0.085, FLOOR + 0.06, 7.10), (-0.085, FLOOR + 0.06, 7.10)]
 prism("tub", [(x, y, z) for x, y, z in ped], (0, 0.0, 0.25), "turq")
-quad_uv("tub", [(-0.07, FLOOR + 0.10, 7.11), (0.07, FLOOR + 0.10, 7.11), (0.07, PB - 0.015, ped_top[2] - 0.004), (-0.07, PB - 0.015, ped_top[2] - 0.004)], rect_uv("sp_ped"))
+quad_uv("tub", [(-0.07, FLOOR + 0.10, 7.11), (0.07, FLOOR + 0.10, 7.11), (0.07, ped_top[1] - 0.015, ped_top[2] - 0.004), (-0.07, ped_top[1] - 0.015, ped_top[2] - 0.004)], rect_uv("sp_ped"))
 
 
 INS = {}   # moving instrument parts: name -> pivot / axis (toward the pilot) / up, Unity MiG frame
@@ -682,12 +692,21 @@ def plate(u, v, w, h, cell, off=0.003, yaw_side=1):
     return cs_
 
 
-# centre section (MiG-29SMT 9.19): two MFI-10-6M colour displays side by side, portrait, each in a bezel with push buttons down
-# its sides and along the top and bottom; the up-front control panel (PUI) above them under the HUD. The left display is the
-# flight display (drawn by the MiG29SMTInstruments plugin on the "pfd" quad), the right one shows the game's tactical display.
-MFD_U, MFD_V = 0.0975, 0.125
-MFD_SW, MFD_SH = 0.130, 0.174          # screen, 3:4 portrait (6 x 8 in class)
-MFD_BW, MFD_BH = 0.172, 0.222          # bezel
+# All-glass panel (SMT 0.2.0; players asked for a modern glass dash, the MiG-29 mod keeps the 9.12's dials): a large colour
+# display filling each wing of the dash (shaped to it, corner_display) and one in the centre, each in a bezel with push buttons and a
+# small border of panel round it; the up-front control panel (PUI) above the centre one, under the HUD.
+#   left   (left wing)   flight display, drawn by the MiG29SMTInstruments plugin on "pfd"
+#   centre (centre)      the game's tactical display across the top ("screen"), the stores page below it ("sms")
+#   right  (right wing)  radar warning, engines, fuel and cautions ("eng")
+# Between them: gear lights and lever (left), a small standby flight display ("stby") and the master caution (right).
+# Tall displays (user, SMT 0.2.0): each runs from just above the panel's lower edge to just under its top (the centre one to just
+# under the up-front control panel), with a ~6 mm (1/4 in) border of panel round its bezel so it reads as mounted in the dash.
+PANEL_GAP = 0.006
+CTR_V0, CTR_V1 = V_LOW + PANEL_GAP, 0.250 - PANEL_GAP  # centre display: up to the control panel (bottom at v 0.25)
+CTR_BW, CTR_BH = 0.250, CTR_V1 - CTR_V0
+CTR_SW, CTR_SH = CTR_BW - 0.028, CTR_BH - 0.028
+CTR_V = (CTR_V0 + CTR_V1) / 2
+MFD_SW, MFD_SH, MFD_BW, MFD_BH = CTR_SW, CTR_SH, CTR_BW, CTR_BH   # mfd_bezel / screen_quad sizes
 
 
 def slab(c, n, right, up, w, h, depth, paint, side_paint="black"):
@@ -703,14 +722,16 @@ def slab(c, n, right, up, w, h, depth, paint, side_paint="black"):
 def mfd_bezel(u, v):
     c, n, right, up = panel_frame(u, v, 0.0)
     slab(c, n, right, up, MFD_BW, MFD_BH, 0.016, "black")
-    flat("tub", c + n * 0.0163, right, up, MFD_SW + 0.008, MFD_SH + 0.008, "dgrey")      # screen surround
-    # push buttons: 5 down each side, 4 along the top and the bottom
+    flat("tub", c + n * 0.0163, right, up, MFD_SW + 0.006, MFD_SH + 0.006, "dgrey")      # screen surround
+    # push buttons: 6 down each side, 5 along the top and the bottom, in the bezel border
+    side = (MFD_BW - MFD_SW) / 4 + MFD_SW / 2
+    for k in range(6):
+        for s in (-1, 1):
+            slab(c + n * 0.016 + right * s * side + up * (k - 2.5) * (MFD_SH / 6.4), n, right, up, 0.008, 0.012, 0.004, "dgrey")
+    tb = (MFD_BH - MFD_SH) / 4 + MFD_SH / 2
     for k in range(5):
         for s in (-1, 1):
-            slab(c + n * 0.016 + right * s * (MFD_BW / 2 - 0.0095) + up * (k - 2) * 0.034, n, right, up, 0.009, 0.011, 0.004, "dgrey")
-    for k in range(4):
-        for s in (-1, 1):
-            slab(c + n * 0.016 + right * (k - 1.5) * 0.030 + up * s * (MFD_BH / 2 - 0.0095), n, right, up, 0.011, 0.009, 0.004, "dgrey")
+            slab(c + n * 0.016 + right * (k - 2) * (MFD_SW / 5.6) + up * s * tb, n, right, up, 0.012, 0.008, 0.004, "dgrey")
     return c + n * 0.0167, right, up
 
 
@@ -720,56 +741,116 @@ def screen_quad(pid, c, right, up, uvrect):
     quad_uv(part(pid), [tuple(x) for x in q], uvrect)
 
 
-# left: flight display. Static UVs on a black atlas cell (a dark screen without the plugin); the plugin re-maps them to its own
-# 0..1 texture.
-pc, pr, pu = mfd_bezel(-MFD_U, MFD_V)
-screen_quad("pfd", pc, pr, pu, rect_uv("paint_black", 6))
-# right: the game's tactical display, whole and at its own 2.1:1 shape (its render texture's main area, u 0..0.75, v 0.25..1) across
-# the top of the screen; cropping its middle to fill the portrait screen cut off the display's centre and range rings (user, SMT
-# 0.1.0). Below it the engine and caution page the plugin draws ("eng").
-tc, tr_, tu = mfd_bezel(MFD_U, MFD_V)
-TAC_H = MFD_SW / 2.1
 def sub_quad(pid, c, right, up, v0, v1, uvrect):
     """The part of a screen between fractions v0..v1 of its height (0 = bottom)."""
     y0, y1 = -MFD_SH / 2 + v0 * MFD_SH, -MFD_SH / 2 + v1 * MFD_SH
     q = [c - right * MFD_SW / 2 + up * y0, c + right * MFD_SW / 2 + up * y0, c + right * MFD_SW / 2 + up * y1, c - right * MFD_SW / 2 + up * y1]
     quad_uv(part(pid), [tuple(x) for x in q], uvrect)
-sub_quad("screen", tc, tr_, tu, 1 - TAC_H / MFD_SH, 1.0, (0.0, 0.25, 0.75, 1.0))
-sub_quad("eng", tc + tu * 0.0002, tr_, tu, 0.0, 1 - TAC_H / MFD_SH - 0.012, rect_uv("paint_black", 6))
 
-# up-front control panel: a keypad either side of a small data window
+
+# Plugin screens get static UVs on a black atlas cell (a dark screen without the plugin); the plugin re-maps them to its own 0..1
+# texture. Left wing: flight display. Right wing: radar warning, engines, fuel and cautions.
+# Wing displays shaped to the whole corner of the dash (user, SMT 0.2.0): each follows its wing's outline (inner edge, lower edge,
+# outer edge, then in along the canopy to the top) inset by the panel border, in a bezel with push buttons on its straight sides.
+# The plugin maps its texture across the shape's bounding box and lays the page out inside the shape.
+CORNER_BORDER = 0.014          # bezel border round the screen
+
+
+def inset_poly(poly, d):
+    """Convex polygon (u, v), counter-clockwise as seen from the seat, moved in by d on every side."""
+    lines = []
+    for i in range(len(poly)):
+        a, b = Vector(poly[i]), Vector(poly[(i + 1) % len(poly)])
+        e = (b - a).normalized(); nrm = Vector((-e.y, e.x))
+        lines.append((a + nrm * d, e))
+    out = []
+    for i in range(len(lines)):
+        (p0, e0), (p1, e1) = lines[i - 1], lines[i]
+        den = e0.x * e1.y - e0.y * e1.x
+        t = ((p1.x - p0.x) * e1.y - (p1.y - p0.y) * e1.x) / den
+        out.append(tuple(p0 + e0 * t))
+    return out
+
+
+def corner_display(s, pid):
+    out0 = min(WING_OUT[s][:5]) - 0.004; knee = WING_V[4]; top = WING_OUT[s][8] - 0.016   # in from the wing edge: the bezel stands 16 mm proud, clear of the wall
+    outline = [(0.2, V_LOW), (out0, V_LOW), (out0, knee), (top, PH), (0.2, PH)]           # right wing, counter-clockwise
+    def side(poly):
+        return poly if s > 0 else [(-u, v) for u, v in reversed(poly)]
+    bez = side(inset_poly(outline, PANEL_GAP))
+    sur = side(inset_poly(outline, PANEL_GAP + CORNER_BORDER - 0.003))
+    scr = side(inset_poly(outline, PANEL_GAP + CORNER_BORDER))
+    fr = [pp(u, v, 0.016, 1) for u, v in bez]; bk = [pp(u, v, 0.0, 1) for u, v in bez]
+    poly_paint("tub", fr, "black")
+    for i in range(len(bez)):
+        j = (i + 1) % len(bez)
+        poly_paint("tub", [fr[j], fr[i], bk[i], bk[j]], "black")
+    poly_paint("tub", [pp(u, v, 0.0163, 1) for u, v in sur], "dgrey")
+    u0, v0, u1, v1 = rect_uv("paint_black", 6)
+    PARTS[part(pid)].face([P(*pp(u, v, 0.0167, 1)) for u, v in scr], [((u0 + u1) / 2, (v0 + v1) / 2)] * len(scr))
+    # push buttons in the border: along the bottom, up the inner side, up the outer side's straight part
+    b_in = s * (0.2 + PANEL_GAP + CORNER_BORDER / 2); b_out = s * (out0 - PANEL_GAP - CORNER_BORDER / 2)
+    v_bot = V_LOW + PANEL_GAP + CORNER_BORDER / 2
+    keys = [((s * (0.2 + PANEL_GAP + CORNER_BORDER) * (1 - f) + s * (out0 - PANEL_GAP - CORNER_BORDER) * f), v_bot, 0.012, 0.008) for f in (0.15, 0.32, 0.5, 0.68, 0.85)]
+    keys += [(b_in, V_LOW + 0.05 + k * 0.05, 0.008, 0.012) for k in range(6)]
+    keys += [(b_out, V_LOW + 0.05 + k * 0.05, 0.008, 0.012) for k in range(3)]
+    for ku, kv, kw, kh in keys:
+        c, n, right, up = panel_frame(ku, kv, 0.0)
+        slab(c + n * 0.016, n, right, up, kw, kh, 0.004, "dgrey")
+
+
+corner_display(-1, "pfd")
+corner_display(1, "eng")
+# centre: the game's tactical display, whole and at its own 2.1:1 shape (its render texture's main area, u 0..0.75, v 0.25..1)
+# across the top of the screen (cropping it to fill a screen cut off the display's centre and range rings; user, SMT 0.1.0), and
+# the stores page the plugin draws below it ("sms")
+MFD_SW, MFD_SH, MFD_BW, MFD_BH = CTR_SW, CTR_SH, CTR_BW, CTR_BH
+tc, tr_, tu = mfd_bezel(0.0, CTR_V)
+TAC_H = CTR_SW / 2.1
+sub_quad("screen", tc, tr_, tu, 1 - TAC_H / CTR_SH, 1.0, (0.0, 0.25, 0.75, 1.0))
+sub_quad("sms", tc + tu * 0.0002, tr_, tu, 0.0, 1 - TAC_H / CTR_SH - 0.012, rect_uv("paint_black", 6))
+
+
+def small_screen(pid, u, v, w, h, depth=0.012):
+    """A small colour display in a black bezel on the panel face (the plugin draws on the screen quad)."""
+    c, n, right, up = panel_frame(u, v, 0.0)
+    slab(c, n, right, up, w + 0.012, h + 0.012, depth, "black")
+    flat("tub", c + n * (depth + 0.0003), right, up, w + 0.003, h + 0.003, "dgrey")
+    q = [c + n * (depth + 0.0006) - right * w / 2 - up * h / 2, c + n * (depth + 0.0006) + right * w / 2 - up * h / 2,
+         c + n * (depth + 0.0006) + right * w / 2 + up * h / 2, c + n * (depth + 0.0006) - right * w / 2 + up * h / 2]
+    quad_uv(part(pid), [tuple(x) for x in q], rect_uv("paint_black", 6))
+
+
+# up-front control panel: a keypad either side of its data window (the plugin draws on "ufc")
 c, n, right, up = panel_frame(0.0, 0.283, 0.0)
 slab(c, n, right, up, 0.25, 0.066, 0.014, "dgrey")
-flat("tub", c + n * 0.0143, right, up, 0.080, 0.028, "black")                     # data window
+# keys: printed caption on each face, and a lit copy just in front that the plugin switches on with its flight event (lamp_ufc_<id>,
+# atlas cells ufc_keys / ufc_keys_lit; grid left to right, top row first)
+uk = ATLAS["layout"]["ufc"]
+KW, KH = 0.0145, 0.019
 for row in range(2):
     for col in range(4):
         for s in (-1, 1):
-            slab(c + n * 0.014 + right * s * (0.058 + col * 0.016) + up * (0.012 - row * 0.022), n, right, up, 0.012, 0.013, 0.004, "black", "dgrey")
+            kc = c + n * 0.014 + right * s * (0.0555 + col * 0.0165) + up * (0.0115 - row * 0.023)
+            slab(kc, n, right, up, KW, KH, 0.004, "black", "dgrey")
+            gx = 3 - col if s < 0 else 4 + col
+            box_uv = (gx / uk["cols"], row / uk["rows"], (gx + 1) / uk["cols"], (row + 1) / uk["rows"])
+            q = lambda off: [tuple(kc + n * off - right * KW / 2 - up * KH / 2), tuple(kc + n * off + right * KW / 2 - up * KH / 2),
+                             tuple(kc + n * off + right * KW / 2 + up * KH / 2), tuple(kc + n * off - right * KW / 2 + up * KH / 2)]
+            quad_uv("tub", q(0.0042), sub_uv("ufc_keys", *box_uv))
+            quad_uv(part("lamp_ufc_" + uk["ids"][row * uk["cols"] + gx]), q(0.0046), sub_uv("ufc_keys_lit", *box_uv))
+small_screen("ufc", 0.0, 0.283, 0.080, 0.032, depth=0.0142)
 
-# standby attitude ball (right wing, where the 9.12's radar screen was): the 9.12's ball at two thirds the size
-f = gauge(0.27, 0.240, 0.075, "g_adi", face_z=0.0012)   # low and inboard enough that the ball behind it stays inside the panel
-BALL_R, BALL_BACK = 0.067, 0.058
-ball_c = f["c"] - f["n"] * BALL_BACK
-bu0, bv0, bu1, bv1 = rect_uv("adi_ball", 1.0)
-pid = part("ins_adi_ball"); NLON, NLAT = 36, 30
-def ball_pt(i, j):
-    lon = -math.pi + 2 * math.pi * i / NLON; lat = -math.pi / 2 + math.pi * j / NLAT
-    dvec = f["up"] * math.sin(lat) + (f["n"] * math.cos(lon) + f["right"] * math.sin(lon)) * math.cos(lat)
-    return ball_c + dvec * BALL_R, (bu0 + (i / NLON) * (bu1 - bu0), bv0 + (j / NLAT) * (bv1 - bv0))
-for i in range(NLON):
-    for j in range(NLAT):
-        q = [ball_pt(i, j), ball_pt(i + 1, j), ball_pt(i + 1, j + 1), ball_pt(i, j + 1)]
-        PARTS[pid].face([P(*x[0]) for x in q], [x[1] for x in q])
-INS["ins_adi_ball"] = (ball_c, f["n"], f["up"])
-sym = f["c"] + f["n"] * 0.0138
-k_ = 0.67
-for sx in (-1, 1):
-    flat("tub", sym + f["right"] * sx * 0.026 * k_, f["right"], f["up"], 0.026 * k_, 0.0032 * k_, "amber")
-flat("tub", sym, f["right"], f["up"], 0.006 * k_, 0.006 * k_, "amber")
-flat("tub", sym - f["up"] * 0.006 * k_, f["right"], f["up"], 0.0025 * k_, 0.009 * k_, "amber")
-
-# gear lever: left of the displays, between them and the gear lights
-GL_U, GL_V = -0.218, 0.170
+# the gaps between the centre and wing displays (u 0.125 .. 0.204)
+GAP_U = (CTR_BW / 2 + 0.204) / 2
+# left gap: gear position lights above the gear lever
+GEAR_U, GEAR_V, GW, GH = -GAP_U, 0.205, 0.062, 0.031
+plate(GEAR_U, GEAR_V, GW, GH, "gear_plate")
+for gid, x, y, sz in ATLAS["layout"]["gear"]:
+    gu, gv = GEAR_U + (x - 0.5) * GW, GEAR_V + (0.5 - y) * GH
+    lamp(f"gear_{gid}_g", gu, gv, sz * GW * 0.95, sz * GW * 0.95, rect_uv("lamp_lit_green", 6), 0.0040)
+    lamp(f"gear_{gid}_r", gu, gv, sz * GW * 0.95, sz * GW * 0.95, rect_uv("lamp_lit_red", 6), 0.0042)
+GL_U, GL_V = -GAP_U, 0.105
 c, n, right, up = panel_frame(GL_U, GL_V, 0.0)
 flat("tub", c + n * 0.003, right, up, 0.03, 0.06, "black")                       # lever plate
 flat("tub", c + n * 0.0035, right, up, 0.006, 0.045, "rubber")                    # slot
@@ -779,49 +860,27 @@ tube(pid, [tuple(piv), tuple(piv + up * 0.03 + n * 0.012)], 0.0035, "metal", 8)
 cylinder(pid, tuple(piv + up * 0.034 + n * 0.014), tuple(right), 0.009, 0.010, "white", 14)   # wheel-shaped knob
 cylinder(pid, tuple(piv + up * 0.034 + n * 0.014), tuple(right), 0.0095, 0.004, "red", 14)
 INS[pid] = (piv, n, up)
-
-def small_screen(pid, u, v, w, h):
-    """A small colour display in a black bezel on the panel face (the plugin draws on the screen quad)."""
-    c, n, right, up = panel_frame(u, v, 0.0)
-    slab(c, n, right, up, w + 0.016, h + 0.016, 0.012, "black")
-    flat("tub", c + n * 0.0123, right, up, w + 0.004, h + 0.004, "dgrey")
-    q = [c + n * 0.0126 - right * w / 2 - up * h / 2, c + n * 0.0126 + right * w / 2 - up * h / 2,
-         c + n * 0.0126 + right * w / 2 + up * h / 2, c + n * 0.0126 - right * w / 2 + up * h / 2]
-    quad_uv(part(pid), [tuple(x) for x in q], rect_uv("paint_black", 6))
-
-
-# left wing: radar warning display (the SMT's L-150 'Pastel' screen in place of the 9.12's SPO-15 lamp panel), gear lights and lever,
-# standby airspeed and altimeter
-small_screen("rwr", -0.29, 0.255, 0.082, 0.082)
-GEAR_U, GEAR_V, GW, GH = -0.29, 0.163, 0.11, 0.055
-plate(GEAR_U, GEAR_V, GW, GH, "gear_plate")
-for gid, x, y, sz in ATLAS["layout"]["gear"]:
-    gu, gv = GEAR_U + (x - 0.5) * GW, GEAR_V + (0.5 - y) * GH
-    lamp(f"gear_{gid}_g", gu, gv, sz * GW * 0.95, sz * GW * 0.95, rect_uv("lamp_lit_green", 6), 0.0040)
-    lamp(f"gear_{gid}_r", gu, gv, sz * GW * 0.95, sz * GW * 0.95, rect_uv("lamp_lit_red", 6), 0.0042)
-# standby airspeed and altimeter (the 9.12's dials, small)
-f = gauge(-0.255, 0.075, 0.054, "g_asi"); needle("asi_kmh", f, 0.86, 0.10)
-f = gauge(-0.325, 0.075, 0.054, "g_alt"); needle("alt_km", f, 0.52, 0.16); needle("alt_m", f, 0.88, 0.09, z=0.0122)
-# right wing: standby attitude ball (above) and a small digital readout (fuel, clock, master caution) in place of the 9.12's round
-# engine gauges and caution lamp panel: engines and cautions are on the right MFD's lower page now
-small_screen("data", 0.27, 0.115, 0.095, 0.060)
-CAU_U, CAU_V = 0.27, 0.040
+# right gap: master caution above the standby flight display (the SMT's backup to the MFDs: attitude, speed, altitude)
+CAU_U, CAU_V = GAP_U, 0.215
 c, n, right, up = panel_frame(CAU_U, CAU_V, 0.0)
 slab(c, n, right, up, 0.050, 0.022, 0.010, "black")
 cl = ATLAS["layout"]["caution"]
 k = cl["ids"].index("master"); i, j = k % cl["cols"], k // cl["cols"]
 lamp("cau_master", CAU_U, CAU_V, 0.040, 0.014, sub_uv("caution_lit", i / cl["cols"], j / cl["rows"], (i + 1) / cl["cols"], (j + 1) / cl["rows"]), 0.0110)
+small_screen("stby", GAP_U, 0.115, 0.060, 0.060)
 
 # panel trim: black edge strips around the centre section, screws, setting knobs
 def strip(u0, v0, u1, v1, w=0.008, off=0.004):
     a, b = Vector(pp(u0, v0, off, 1)), Vector(pp(u1, v1, off, 1))
     d = (b - a).normalized(); n = panel_normal((u0 + u1) / 2); side = d.cross(n).normalized() * w / 2
     poly_paint("tub", [tuple(a - side), tuple(b - side), tuple(b + side), tuple(a + side)][::-1], "black")
-for (u0, v0, u1, v1) in ((-0.2, 0.003, 0.2, 0.003), (-0.2, PH - 0.004, 0.2, PH - 0.004), (-0.197, 0.0, -0.197, PH), (0.197, 0.0, 0.197, PH)):
+for (u0, v0, u1, v1) in ((-0.2, V_LOW + 0.003, 0.2, V_LOW + 0.003), (-0.2, PH - 0.004, 0.2, PH - 0.004), (-0.197, V_LOW, -0.197, PH), (0.197, V_LOW, 0.197, PH)):
     strip(u0, v0, u1, v1)
-for (u, v) in ((-0.19, 0.009), (0.19, 0.009), (-0.185, PH - 0.035), (0.185, PH - 0.035), (-0.27, 0.33), (0.27, 0.33), (-0.32, 0.03), (0.32, 0.12)):
+for s in (-1, 1):   # the wings' lower edge, trimmed like the centre section's
+    strip(s * 0.2, V_LOW + 0.003, s * (WING_OUT[s][0] - 0.004), V_LOW + 0.003)
+for (u, v) in ((-0.19, V_LOW + 0.009), (0.19, V_LOW + 0.009), (-0.185, PH - 0.035), (0.185, PH - 0.035), (-0.27, 0.33), (0.27, 0.33)):
     c = Vector(pp(u, v, 0.002, 1)); cylinder("tub", tuple(c), tuple(panel_normal(u)), 0.004, 0.004, "metal", 8)
-for (u, v) in ((-0.165, 0.283), (0.165, 0.283), (-0.215, 0.07)):   # setting knobs either side of the control panel, light dimmer
+for (u, v) in ((-0.165, 0.283), (0.165, 0.283), (GAP_U, 0.035)):   # setting knobs either side of the control panel, light dimmer
     n = panel_normal(u); c = Vector(pp(u, v, 0.0, 1))
     cylinder("tub", tuple(c + n * 0.009), tuple(n), 0.0075, 0.018, "black", 12)
     cylinder("tub", tuple(c + n * 0.019), tuple(n), 0.0055, 0.004, "dgrey", 12)
@@ -1033,7 +1092,11 @@ def bow_gap(theta):
     return None
 
 
-bow = []                              # per angle: outer/inner points at the rear (z0) and front (z1) edge, Unity frame
+# Slim bow (SMT 0.2.0): it used to fill the whole slot (10-12 cm along the arch) and stand 4.2 cm off the glass, a ~13 cm black band
+# across the view; the user asked for it slimmer and moulded in, the real MiG's arch being slim with good visibility. Now 5.5 cm wide
+# at the glass, tapering to 3.5 cm on its inner face, 2.4 cm deep, centred in the slot; the rest of the slot is glazed with the
+# canopy glass so the glazing runs on unbroken.
+BOW_W, BOW_WI, BOW_D = 0.055, 0.035, 0.024
 gaps = [(th, bow_gap(th)) for th in range(-88, 89, 2)]
 gaps = [(th, g) for th, g in gaps if g is not None]
 # the slot's edges follow the glass triangulation and wobble: smooth them so the bow's edges run clean
@@ -1041,13 +1104,13 @@ sm = []
 for i, (th, g) in enumerate(gaps):
     nb = [gg for _, gg in gaps[max(0, i - 3):i + 4]]
     sm.append((th, (min(x[0] for x in nb), max(x[1] for x in nb))))
+bow, slot = [], []                    # bow: outer/inner points at the rear (z0) and front (z1) edge; slot: the glass at the slot's ends
 for th, g in sm:
-    (h0, d), (h1, _) = glass_hit(th, g[0] - 0.008), glass_hit(th, g[1] + 0.008)
+    (h0, d), (h1, _) = glass_hit(th, g[0] - 0.004), glass_hit(th, g[1] + 0.004)
     if h0 is None or h1 is None:
         continue
     du = (d.x, d.z, d.y)               # Blender -> Unity direction
-    def U(h, k): return (h.x - du[0] * k, h.z - du[1] * k, h.y - du[2] * k)
-    bow.append((U(h0, 0.004), U(h0, 0.042), U(h1, 0.042), U(h1, 0.004), du))
+    slot.append(((h0.x, h0.z, h0.y), (h1.x, h1.z, h1.y), du))
 # the glass is faceted, so the hit radius wobbles from station to station: smooth every point along the arch
 def _smooth(seq, k):
     out = []
@@ -1055,21 +1118,33 @@ def _smooth(seq, k):
         nb = seq[max(0, i - k):i + k + 1]
         out.append(tuple(sum(p[c] for p in nb) / len(nb) for c in range(3)))
     return out
-cols = [_smooth([b[j] for b in bow], 3) for j in range(4)]
-bow = [(cols[0][i], cols[1][i], cols[2][i], cols[3][i], bow[i][4]) for i in range(len(bow))]
+sa, sb = _smooth([s[0] for s in slot], 3), _smooth([s[1] for s in slot], 3)
+glass_strips = []
+for A, B, (_, _, du) in zip(sa, sb, slot):
+    A, B = Vector(A), Vector(B)
+    span = max((B - A).length, 1e-4)
+    def L(f, k): return tuple(A.lerp(B, f) - Vector(du) * k)    # across the slot (the glass's chord), k inward
+    h, hi = 0.5 * BOW_W / span, 0.5 * BOW_WI / span
+    bow.append((L(0.5 - h, 0.002), L(0.5 - hi, BOW_D), L(0.5 + hi, BOW_D), L(0.5 + h, 0.002), du))
+    glass_strips.append((L(0.0, 0.0), L(0.5 - h, 0.0), L(0.5 + h, 0.0), L(1.0, 0.0)))
 for a, b in zip(bow, bow[1:]):
     o0a, i0a, i1a, o1a, da = a
     o0b, i0b, i1b, o1b, db = b
     inward = tuple(-(da[k] + db[k]) / 2 for k in range(3))
     face_toward("tub", [i0a, i0b, i1b, i1a], inward, "dgrey")                 # inner face
-    face_toward("tub", [o0a, o0b, i0b, i0a], (0, 0, -1), "dgrey")            # rear face (toward the pilot)
-    face_toward("tub", [o1a, i1a, i1b, o1b], (0, 0, 1), "dgrey")             # front face
-for end, out in ((bow[0], -1), (bow[-1], 1)):                                # feet: taper down and out onto the sills
+    face_toward("tub", [o0a, o0b, i0b, i0a], (0, 0, -1), "dgrey")            # rear chamfer (toward the pilot)
+    face_toward("tub", [o1a, i1a, i1b, o1b], (0, 0, 1), "dgrey")             # front chamfer
+for a, b in zip(glass_strips, glass_strips[1:]):                             # glazing either side of the bow, both faces
+    for j0, j1 in ((0, 1), (2, 3)):
+        q = [a[j0], b[j0], b[j1], a[j1]]
+        PARTS["glass"].face([P(*p) for p in q], [(0.5, 0.5)] * 4)
+        PARTS["glass"].face([P(*p) for p in q[::-1]], [(0.5, 0.5)] * 4)
+for end, out in ((bow[0], -1), (bow[-1], 1)):                                # feet: run down and out onto the sills, same profile
     o0, i0, i1, o1, du = end
     foot_y = wall_top(BOW_Z) - 0.01
-    zf0, zf1 = i0[2] - 0.015, i1[2] + 0.015
-    xo = out * (wall_x(foot_y, BOW_Z) - 0.004)
-    fi0, fi1, fo0, fo1 = (xo - out * 0.05, foot_y, zf0), (xo - out * 0.05, foot_y, zf1), (xo, foot_y, zf0), (xo, foot_y, zf1)
+    zf0, zf1 = o0[2] - 0.006, o1[2] + 0.006
+    xo = out * (wall_x(foot_y, BOW_Z) - 0.010)
+    fi0, fi1, fo0, fo1 = (xo - out * 0.032, foot_y, zf0 + 0.010), (xo - out * 0.032, foot_y, zf1 - 0.010), (xo, foot_y, zf0), (xo, foot_y, zf1)
     face_toward("tub", [i0, i1, fi1, fi0], (-out, 0.4, 0), "dgrey")              # inner slope
     face_toward("tub", [o0, i0, fi0, fo0], (0, 0, -1), "dgrey")                  # rear (toward the pilot)
     face_toward("tub", [o1, i1, fi1, fo1], (0, 0, 1), "dgrey")                   # front
@@ -1095,24 +1170,24 @@ def mirror(gid, theta, w, h, view, stalk=0.05):
     pos = tuple(base[k] - du[k] * stalk for k in range(3))
     pos = (pos[0], pos[1], pos[2] - 0.03)
     pid = part("ins_mirror_" + gid)
-    tube(pid, [base, pos], 0.007, "black", 8)
+    tube(pid, [base, pos], 0.0045, "black", 8)
     n = ((Vector(EYE) - Vector(pos)).normalized() + Vector(view).normalized()).normalized()
     m = look_matrix(pos, tuple(Vector(pos) + n))
-    box(pid, pos, (w, h, 0.022), "black", 0.006, rot=m)
+    box(pid, pos, (w, h, 0.014), "black", 0.004, rot=m)
     INS[pid] = (Vector(base), Vector((0.0, 0.0, 1.0)), Vector((-du[0], -du[1], -du[2])))
     # the reflecting face: a quad built in Unity (MiG29Cockpit) as "NOMirror_<gid>" for the NO Mirrors plugin, on the housing's face
     up = Vector((0.0, 1.0, 0.0)); up = (up - n * up.dot(n)).normalized()
-    c = Vector(pos) + n * 0.0115
-    MGLASS[pid] = [c.x, c.y, c.z, n.x, n.y, n.z, up.x, up.y, up.z, w - 0.012, h - 0.012]
+    c = Vector(pos) + n * 0.0075
+    MGLASS[pid] = [c.x, c.y, c.z, n.x, n.y, n.z, up.x, up.y, up.z, w - 0.008, h - 0.008]
 
 
 MGLASS = {}   # mirror glass frames, Unity MiG frame: centre, normal (toward the eye), up, width, height
 
 
 # views: straight back over the spine; the side mirrors back and out past each side of the canopy; all a little below level
-mirror("c", 0, 0.20, 0.055, view=(0.0, -0.05, -1.0), stalk=0.045)   # centre rear-view mirror at the top of the bow
-mirror("l", -42, 0.11, 0.065, view=(-0.35, -0.05, -1.0))           # side mirrors on the bow's upper corners
-mirror("r", 42, 0.11, 0.065, view=(0.35, -0.05, -1.0))
+mirror("c", 0, 0.18, 0.046, view=(0.0, -0.05, -1.0), stalk=0.04)   # centre rear-view mirror at the top of the bow
+mirror("l", -42, 0.095, 0.055, view=(-0.35, -0.05, -1.0), stalk=0.04)           # side mirrors on the bow's upper corners
+mirror("r", 42, 0.095, 0.055, view=(0.35, -0.05, -1.0), stalk=0.04)
 
 # Folded pose per mirror, tucked against the canopy. At a fixed 60 deg about the hinge they still hung below the bow (user video,
 # v0.8.7), and the side mirrors meet the curved glass at 66 deg. Searched: a fold about the hinge (mount x, either way) then a twist
@@ -1239,7 +1314,7 @@ sign = winding_sign()
 parts_out, meshes = [], {}
 for name, mat, pivot in (("tub", "cockpit", None), ("glass", "glass", None), ("seat", "cockpit", SEAT_O), ("stick", "cockpit", STICK_O),
                          ("throttle", "cockpit", THR_O), ("screen", "screen", None), ("lamps", "lamps", None), ("pfd", "cockpit", None),
-                         ("eng", "cockpit", None), ("rwr", "cockpit", None), ("data", "cockpit", None)):
+                         ("eng", "cockpit", None), ("sms", "cockpit", None), ("stby", "cockpit", None), ("ufc", "cockpit", None)):
     o, me = export_part(PARTS[name], sign, mat, pivot)
     parts_out.append(o); meshes[name] = me
 for name in sorted(k for k in PARTS if k.startswith("ins_") or k.startswith("lamp_")):
@@ -1273,6 +1348,7 @@ for name in ("tub", "seat"):
         if body_bvh.ray_cast(c + d * 0.003, d, 2.0)[0] is None and glass_bvh.ray_cast(c + d * 0.003, d, 2.0)[0] is None:
             outside.append((round(c.x, 3), round(c.z, 3), round(c.y, 3)))
     print(f"[cockpit] {name}: {len(outside)} verts outside the airframe (unity x,y,z): {sorted(set(outside))[:40]}")
+    if os.environ.get("MIG29_OUTSIDE_PANEL"): print(f"[cockpit] {name}: panel-zone outside: {sorted(set(o for o in outside if 6.95 < o[2] < 7.45))}")
     print(f"[cockpit] {name}: of those in the bay behind the seat (z < {Z_BULK}): {sorted(set(o for o in outside if o[2] < Z_BULK))[:20]}")
 
 # ------------------------------------------------------------------------------------------------ preview renders
@@ -1299,11 +1375,12 @@ if PREVIEW:
         return m
 
     m_ck = mat("ck", img); m_glass = mat("glass", color=(0.6, 0.75, 0.7, 1), alpha=0.15, rough=0.05)
+    m_cglass = m_glass if not os.environ.get("MIG29_GLASSRED") else mat("red", color=(1, 0, 0, 1))   # debug: show the cockpit glass part
     m_screen = mat("screen", color=(0.02, 0.1, 0.06, 1), emit=(0.05, 0.35, 0.18, 1)); m_lamp = mat("lamp", color=(0.4, 0.1, 0.05, 1))
     m_skin = mat("skin", skin); m_body = mat("body", color=(0.45, 0.47, 0.5, 1), rough=0.5)
     for name, me in meshes.items():
         ob = bpy.data.objects.new("ck_" + name, me); scene.collection.objects.link(ob)
-        ob.data.materials.append({"glass": m_glass, "screen": m_screen, "lamps": m_lamp}.get(name, m_ck))
+        ob.data.materials.append({"glass": m_cglass, "screen": m_screen, "lamps": m_lamp}.get(name, m_ck))
     # frames as an object
     fr = parts_out[-1]
     fv = [cs.u2b(*fr["vertices"][i:i + 3]) for i in range(0, len(fr["vertices"]), 3)]
@@ -1338,13 +1415,13 @@ if PREVIEW:
              # the equipment bay behind the seat: over each shoulder (head turned and leaned, as with free look) and from outside
              "shoulder_l": (E + P(0.17, 0.0, -0.02), E + P(-0.50, -0.55, -1)), "shoulder_r": (E + P(-0.17, 0.0, -0.02), E + P(0.50, -0.55, -1)),
              "bay": (P(0.30, 1.45, 6.30), P(-0.02, 0.98, 5.80)), "outside_rear": (P(1.3, 1.9, 4.9), P(0, 1.0, 5.9)),
-             "console_l": (E + P(-0.05, -0.05, 0.0), P(-0.30, 0.66, 6.45)), "panel": (E, P(0, 0.88, 7.2)), "corner_l": (E, P(-0.36, 0.93, 7.15)), "corner_r": (E, P(0.36, 0.93, 7.15)),
+             "console_l": (E + P(-0.05, -0.05, 0.0), P(-0.30, 0.66, 6.45)), "panel": (E, P(0, 0.88, 7.2)), "corner_l": (E, P(-0.36, 0.93, 7.15)), "mfd_low_l": (E + P(0.05, -0.12, 0.25), P(-0.30, 0.62, 7.22)), "lean_l": (E + P(-0.18, -0.05, 0.05), P(0.05, 0.80, 7.2)), "lean_r": (E + P(0.18, -0.05, 0.05), P(-0.05, 0.80, 7.2)), "high": (E + P(0, 0.08, -0.05), P(0, 0.76, 7.2)), "ufc": (E + P(0, -0.12, 0.35), P(0, 0.875, 7.22)), "corner_r": (E, P(0.36, 0.93, 7.15)),
              "seat_look": (E + P(-0.17, 0.0, 0.12), P(0.05, 0.92, 6.12)), "seat_front": (P(0.0, 1.02, 7.05), P(0, 0.78, 6.25))}
     only = [v for v in os.environ.get("MIG29_VIEWS", "").split(",") if v]   # e.g. MIG29_VIEWS=back,bay renders just those
     for name, (loc, look) in views.items():
         if only and name not in only:
             continue
-        cam = cs.camera(name, loc, look, lens=30 if name in ("outside", "outside_front", "outside_rear") else (45 if name.startswith("corner") else 13))
+        cam = cs.camera(name, loc, look, lens=30 if name in ("outside", "outside_front", "outside_rear") else (45 if name.startswith("corner") else 24 if name in ("lean_l", "lean_r", "high") else 40 if name == "ufc" else 13))
         scene.camera = cam
         scene.render.filepath = os.path.join(PREVIEW, f"ck_{name}.png")
         bpy.ops.render.render(write_still=True)

@@ -16,7 +16,7 @@ namespace MiG29SMTInstruments
     public class MiG29InstrumentsPlugin : BaseUnityPlugin
     {
         // same as MiG29Builder.Version (build_mig29.ps1 checks): mod managers match the release version against this DLL's version
-        public const string ModVersion = "0.1.2";
+        public const string ModVersion = "0.2.0";
         internal static ManualLogSource Log;
         internal static BepInEx.Configuration.ConfigEntry<float> PanelLighting;
         internal static BepInEx.Configuration.ConfigEntry<BepInEx.Configuration.KeyboardShortcut> JettisonKey;
@@ -31,7 +31,9 @@ namespace MiG29SMTInstruments
         void Awake()
         {
             Log = Logger;
-            new HarmonyLib.Harmony("iornman1213.mig29smt.instruments").PatchAll(typeof(R27RNoTarget));
+            var harmony = new HarmonyLib.Harmony("iornman1213.mig29smt.instruments");
+            harmony.PatchAll(typeof(R27RNoTarget));
+            harmony.PatchAll(typeof(BulletHolePatch)); harmony.PatchAll(typeof(BlastHolePatch));   // holes where the shots land (Holes.cs)
             PanelLighting = Config.Bind("Cockpit", "Night panel lighting", 1f,
                 new BepInEx.Configuration.ConfigDescription("Brightness of the cockpit flood lights at night (0 = off)", new BepInEx.Configuration.AcceptableValueRange<float>(0f, 4f)));
             JettisonKey = Config.Bind("Drop tanks", "Jettison key", new BepInEx.Configuration.KeyboardShortcut(KeyCode.J, KeyCode.LeftControl),
@@ -151,7 +153,7 @@ namespace MiG29SMTInstruments
                 // only the MiG-29SMT itself: the MiG-29 mod carries similarly named instruments
                 if (((Unit)ac).definition == null || ((Unit)ac).definition.jsonKey != MiG29Key) return;
                 foreach (var t in InstrumentDriver.Root(ac).GetComponentsInChildren<Transform>(true))
-                    if (t.name == "SMT_ins_asi_kmh")
+                    if (t.name == "MiG29_ck_pfd")
                     {
                         ac.gameObject.AddComponent<InstrumentDriver>();
                         return;
@@ -227,12 +229,14 @@ namespace MiG29SMTInstruments
             ac.onRadarWarning += OnRadarWarning;
             canopies = CanopiesField?.GetValue(ac) as Canopy[];
             // night lighting: a soft flood under the glareshield and one over the consoles, faded in after dusk
-            var adi = root.Find("SMT_ins_adi_ball");
-            if (adi != null)
+            // (placed from the gear lever, low in the gap left of the centre MFD: the panel's middle is 0.165 m to its right)
+            var lever = root.Find("SMT_ins_gear_lever");
+            if (lever != null)
             {
+                var mid = lever.position + root.right * 0.165f + lever.up * 0.135f;
                 // under the glareshield lip, aimed down the panel; low intensity: the game's exposure adapts to the dark
-                panelLight = MakeLight("MiG29_panel_light", adi.position - adi.forward * 0.10f + adi.up * 0.07f, adi, 0.55f, new Color(1f, 0.55f, 0.42f));
-                consoleLight = MakeLight("MiG29_console_light", adi.position - adi.forward * 0.55f - adi.up * 0.05f, adi, 0.8f, new Color(1f, 0.5f, 0.4f));
+                panelLight = MakeLight("MiG29_panel_light", mid - lever.forward * 0.10f + lever.up * 0.07f, lever, 0.55f, new Color(1f, 0.55f, 0.42f));
+                consoleLight = MakeLight("MiG29_console_light", mid - lever.forward * 0.55f - lever.up * 0.05f, lever, 0.8f, new Color(1f, 0.5f, 0.4f));
             }
             ScreenDriver.Setup(this, root);
             MiG29InstrumentsPlugin.Log.LogInfo($"MiG-29 instruments on {ac.name}: {needles.Count} needles, ball {(ball != null)}, {lamps.Count} lamps, {engines.Count} engines");
@@ -391,6 +395,61 @@ namespace MiG29SMTInstruments
                         st.rwr.Add((Vector3.SignedAngle(fwd, to, Vector3.up), -1));
                         st.rwrPower = 1f;
                     }
+            if (Time.time >= nextStores) GatherStores(cock);
+            GatherSignature();
+        }
+
+        // heat: each nozzle's IR source (JetNozzle sets it from the thrust, plus the afterburner) against its maximum; radar
+        // cross-section: the unit's current RCS (stores add to it) against the clean figure; own radar on or off
+        static readonly FieldInfo IrSourceField = typeof(JetNozzle).GetField("irSource", BindingFlags.Instance | BindingFlags.NonPublic);
+        static readonly FieldInfo RadarActivatedField = typeof(Radar).GetField("activated", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        JetNozzle[] nozzles;
+        void GatherSignature()
+        {
+            if (nozzles == null) nozzles = ac.GetComponentsInChildren<JetNozzle>(true);
+            float heat = 0f, max = 0f;
+            foreach (var n in nozzles)
+            {
+                if (n == null) continue;
+                if (IrSourceField?.GetValue(n) is IRSource ir) heat += ir.intensity;
+                max += n.GetIRMax();
+            }
+            st.irFrac = max > 0f ? Mathf.Clamp01(heat / max) : 0f;
+            st.rcs = ((Unit)ac).RCS;
+            st.rcsClean = ((Unit)ac).definition != null && ((Unit)ac).definition.radarSize > 0f ? ((Unit)ac).definition.radarSize : st.rcs;
+            st.radarOn = ac.radar != null && RadarActivatedField != null && (bool)RadarActivatedField.GetValue(ac.radar);
+        }
+
+        // the stores page's data, four times a second: stations (the game's grouping: one per weapon type), countermeasures, the first
+        // entry of the target list and the fuel left in drop tanks
+        float nextStores, nextCmScan;
+        Countermeasure[] cmCache = new Countermeasure[0];
+        void GatherStores(Transform cock)
+        {
+            nextStores = Time.time + 0.25f;
+            st.stations.Clear();
+            var wm = ac.weaponManager;
+            foreach (var ws in ac.weaponStations)
+            {
+                var wi = ws?.WeaponInfo;
+                if (wi == null) continue;
+                st.stations.Add((string.IsNullOrEmpty(wi.shortName) ? wi.weaponName : wi.shortName, ws.Ammo, ws.FullAmmo, wm != null && wm.currentWeaponStation == ws));
+            }
+            if (Time.time >= nextCmScan) { nextCmScan = Time.time + 2f; cmCache = ac.GetComponentsInChildren<Countermeasure>(); }
+            st.countermeasures.Clear();
+            foreach (var cm in cmCache)
+            {
+                if (cm == null) continue;
+                int i = st.countermeasures.FindIndex(c => c.name == cm.displayName);
+                if (i < 0) st.countermeasures.Add((cm.displayName, cm.ammo));
+                else st.countermeasures[i] = (cm.displayName, st.countermeasures[i].ammo + cm.ammo);
+            }
+            var tl = wm != null ? wm.GetTargetList() : null;
+            var tgt = tl != null && tl.Count > 0 ? tl[0] : null;
+            st.target = tgt != null ? (tgt.definition != null && !string.IsNullOrEmpty(tgt.definition.unitName) ? tgt.definition.unitName : tgt.unitName) : null;
+            st.targetKm = tgt != null ? Vector3.Distance(tgt.transform.position, cock.position) / 1000f : 0f;
+            var stores = ac.GetComponent<StoresDriver>();
+            st.extFuelKg = stores != null ? stores.ExternalFuel : 0f;
         }
 
         int errors;
