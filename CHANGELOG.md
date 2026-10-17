@@ -8,8 +8,9 @@
     attack, vertical speed, radar altitude, gear and missile warnings.
   - **Centre: tactical display and stores.** The game's tactical display across the top; below it every weapon station with rounds
     left (the selected one highlighted), countermeasures, and the current target with its range.
-  - **Right: radar warning and systems.** Threats by bearing and type, inbound missiles and lock; RPM dials and EGT for both
-    engines, throttle, internal and drop-tank fuel, hydraulics, oxygen and the caution messages.
+  - **Right: radar warning and systems.** Threats by bearing and type, inbound missiles and lock; your own signature (heat
+    from the engines as a LOW / MED / HIGH bar, radar cross-section now against clean in %, and whether your radar is on);
+    RPM dials and EGT for both engines, throttle, internal and drop-tank fuel, hydraulics, oxygen and the caution messages.
   - Large, crisp lettering sized for the cockpit view (the screens are mipmapped, so text stays sharp at a distance).
   - Between the screens: gear lights and lever, a small standby flight display and the master caution. The up-front control
     panel's window shows the clock and the selected weapon, and its **16 keys light up with flight events**: canopy, brakes,
@@ -23,6 +24,8 @@
   - **KAB-500L**: 500 kg laser-guided bomb (inner pylons), homing on the laser spot like the Kh-29L.
   - New preset loadouts: Precision Strike (Kh-29L / KAB-500L / R-73) and SEAD (Kh-31P / R-77 / R-73).
 - **Two SMT liveries**: VKS Grey 26 (modern Russian two-tone grey splinter) and Dark Grey 52.
+- **Bullet holes where you were hit**: holes are punched where rounds and fragments actually strike, sized like the stock jets',
+  instead of appearing in fixed spots on a damaged part.
 - **Slimmer windscreen bow** that hugs the glass, with smaller mirrors: a much clearer view out. A streaky second arch under it
   and slabs along the sills (the airframe's inner structure showing through) are gone.
 - **No more star shadows on the wings**: the source model's wing stars were still in the skin's shading texture and showed as dark
