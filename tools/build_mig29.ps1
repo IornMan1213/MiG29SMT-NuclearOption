@@ -1,16 +1,17 @@
-# Headless build of the MiG-29 Blueprinter mod.
-# Must be launched via PowerShell Start-Process (launching Unity.exe from Git Bash fails the licensing signature check).
+# Headless build of the MiG-29 Blueprinter mod (Windows PowerShell, or pwsh on Linux).
+# On Windows, must be launched via PowerShell Start-Process (launching Unity.exe from Git Bash fails the licensing signature check).
 # Unity Hub must be running and signed in.
 param(
     [string]$Project = $env:BLUEPRINTER_PROJECT,
-    [string]$Unity = "C:\Program Files\Unity\Hub\Editor\2022.3.62f2\Editor\Unity.exe",
-    [string]$Blender = "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe",
+    [string]$Unity = $(if ($env:UNITY_EDITOR) { $env:UNITY_EDITOR } elseif ($env:OS -eq 'Windows_NT') { "C:\Program Files\Unity\Hub\Editor\2022.3.62f2\Editor\Unity.exe" } else { "$HOME/Unity/Hub/Editor/2022.3.62f2/Editor/Unity" }),
+    [string]$Blender = $(if ($env:BLENDER) { $env:BLENDER } elseif ($env:OS -eq 'Windows_NT') { "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" } else { "blender" }),
     [switch]$Release,          # back the build up to builds/ and the GitHub `builds` branch (tools/backup_build.py)
     [string]$Note = ""         # notes column for that version
 )
 $ErrorActionPreference = "Stop"
+$py = if ($env:OS -eq 'Windows_NT') { "python" } else { "python3" }
 if (-not $Project -or -not (Test-Path (Join-Path $Project "Assets"))) { throw "Pass -Project <Blueprinter-Editor folder> or set BLUEPRINTER_PROJECT" }
-$sa = Join-Path $Project "Library\ScriptAssemblies"
+$sa = Join-Path $Project "Library/ScriptAssemblies"
 $dlls = "Assembly-CSharp.dll", "Assembly-CSharp-firstpass.dll"
 
 function Invoke-Unity([string[]]$extra, [string]$log) {
@@ -20,40 +21,40 @@ function Invoke-Unity([string[]]$extra, [string]$log) {
 }
 
 # 0a. Sync the editor scripts from this repo into the Unity project (the repo is the source of truth).
-$dst = Join-Path $Project "Assets\Editor\MiG29SMTTools"
+$dst = Join-Path $Project "Assets/Editor/MiG29SMTTools"
 New-Item -ItemType Directory -Force $dst | Out-Null
-Copy-Item (Join-Path (Split-Path $PSScriptRoot) "unity\MiG29Tools\*.cs") $dst -Force
+Copy-Item (Join-Path (Split-Path $PSScriptRoot) "unity/MiG29Tools/*.cs") $dst -Force
 
 # 0b. Generated sources: missile/launcher models, the flight-model export and the livery textures.
 $tools = $PSScriptRoot
-$src = "$Project\MiG29SMTSource"
+$src = "$Project/MiG29SMTSource"
 Push-Location (Split-Path $tools)
-python "$tools\missile_gen.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "missile_gen failed" }
-python "$tools\nozzle_gen.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "nozzle_gen failed" }
-python "$tools\nose_bay.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "nose_bay failed" }
-python "$tools\gear_wells.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "gear_wells failed" }
-python "$tools\main_gear_gen.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "main_gear_gen failed" }
-python "$tools\main_bay_door.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "main_bay_door failed" }
-python "$tools\airbrake_cut.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "airbrake_cut failed" }
-python "$tools\smt_hump.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "smt_hump failed" }
-python "$tools\main_wells.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "main_wells failed" }
-python "$tools\bay_texture.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "bay_texture failed" }
-python "$tools\fm_export.py" "$src\fm_unity.json"; if ($LASTEXITCODE -ne 0) { throw "fm_export failed" }
-python "$tools\livery_desert.py" "$src\mig29_basecolor.png" "$src\mig29_mesh.json" "$src\mig29_basecolor_desert.png"; if ($LASTEXITCODE -ne 0) { throw "livery_desert failed" }
-python "$tools\livery_digital.py" "$src\mig29_basecolor.png" "$src\mig29_mesh.json" "$src\mig29_basecolor_digital.png"; if ($LASTEXITCODE -ne 0) { throw "livery_digital failed" }
-python "$tools\livery_display.py" "$src\mig29_basecolor.png" "$src\mig29_mesh.json" "$src\mig29_basecolor_display.png"; if ($LASTEXITCODE -ne 0) { throw "livery_display failed" }
-python "$tools\livery_profiles.py" "$src\mig29_basecolor.png" "$src\mig29_mesh.json" "$src"; if ($LASTEXITCODE -ne 0) { throw "livery_profiles failed" }
+& $py "$tools/missile_gen.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "missile_gen failed" }
+& $py "$tools/nozzle_gen.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "nozzle_gen failed" }
+& $py "$tools/nose_bay.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "nose_bay failed" }
+& $py "$tools/gear_wells.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "gear_wells failed" }
+& $py "$tools/main_gear_gen.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "main_gear_gen failed" }
+& $py "$tools/main_bay_door.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "main_bay_door failed" }
+& $py "$tools/airbrake_cut.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "airbrake_cut failed" }
+& $py "$tools/smt_hump.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "smt_hump failed" }
+& $py "$tools/main_wells.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "main_wells failed" }
+& $py "$tools/bay_texture.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "bay_texture failed" }
+& $py "$tools/fm_export.py" "$src/fm_unity.json"; if ($LASTEXITCODE -ne 0) { throw "fm_export failed" }
+& $py "$tools/livery_desert.py" "$src/mig29_basecolor.png" "$src/mig29_mesh.json" "$src/mig29_basecolor_desert.png"; if ($LASTEXITCODE -ne 0) { throw "livery_desert failed" }
+& $py "$tools/livery_digital.py" "$src/mig29_basecolor.png" "$src/mig29_mesh.json" "$src/mig29_basecolor_digital.png"; if ($LASTEXITCODE -ne 0) { throw "livery_digital failed" }
+& $py "$tools/livery_display.py" "$src/mig29_basecolor.png" "$src/mig29_mesh.json" "$src/mig29_basecolor_display.png"; if ($LASTEXITCODE -ne 0) { throw "livery_display failed" }
+& $py "$tools/livery_profiles.py" "$src/mig29_basecolor.png" "$src/mig29_mesh.json" "$src"; if ($LASTEXITCODE -ne 0) { throw "livery_profiles failed" }
 # hand-painted livery (blender/livery_edit.py) when there is one
-$custom = Join-Path (Split-Path $PSScriptRoot) "blender\livery\mig29_livery_custom.png"
-Remove-Item "$src\mig29_basecolor_custom.png" -ErrorAction SilentlyContinue
-if ((Test-Path $custom) -and (Get-FileHash $custom).Hash -ne (Get-FileHash "$src\mig29_basecolor.png").Hash) {   # not until it has been painted
-    Copy-Item $custom "$src\mig29_basecolor_custom.png" -Force
+$custom = Join-Path (Split-Path $PSScriptRoot) "blender/livery/mig29_livery_custom.png"
+Remove-Item "$src/mig29_basecolor_custom.png" -ErrorAction SilentlyContinue
+if ((Test-Path $custom) -and (Get-FileHash $custom).Hash -ne (Get-FileHash "$src/mig29_basecolor.png").Hash) {   # not until it has been painted
+    Copy-Item $custom "$src/mig29_basecolor_custom.png" -Force
 }
 # cockpit: texture atlas, then the from-scratch interior modelled in Blender (fitted to mig29_mesh.json)
-python "$tools\cockpit_atlas.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "cockpit_atlas failed" }
-$ckOld = if (Test-Path "$src\cockpit_mesh.json") { (Get-Item "$src\cockpit_mesh.json").LastWriteTime } else { [datetime]::MinValue }
-& $Blender -b --python "$(Split-Path $tools)\blender\cockpit_build.py" -- "$src" | Select-String '\[cockpit\]|Error|Traceback' | ForEach-Object { $_.Line }
-if (-not (Test-Path "$src\cockpit_mesh.json") -or (Get-Item "$src\cockpit_mesh.json").LastWriteTime -le $ckOld) { throw "cockpit_build failed" }
+& $py "$tools/cockpit_atlas.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "cockpit_atlas failed" }
+$ckOld = if (Test-Path "$src/cockpit_mesh.json") { (Get-Item "$src/cockpit_mesh.json").LastWriteTime } else { [datetime]::MinValue }
+& $Blender -b --python "$(Split-Path $tools)/blender/cockpit_build.py" -- "$src" | Select-String '\[cockpit\]|Error|Traceback' | ForEach-Object { $_.Line }
+if (-not (Test-Path "$src/cockpit_mesh.json") -or (Get-Item "$src/cockpit_mesh.json").LastWriteTime -le $ckOld) { throw "cockpit_build failed" }
 Pop-Location
 
 # 1. Compile pass. Blueprinter keeps the game's Assembly-CSharp in ScriptAssemblies read-only, which makes
@@ -66,13 +67,13 @@ if ($code -ne 0) { throw "compile pass failed ($code), see MiG29SMTOut_compile.l
 foreach ($f in $dlls) {
     $d = Join-Path $sa $f
     if (Test-Path $d) { Set-ItemProperty $d IsReadOnly $false }
-    Copy-Item (Join-Path $Project "Packages\nuclearoption\$f") $d -Force
+    Copy-Item (Join-Path $Project "Packages/nuclearoption/$f") $d -Force
     Set-ItemProperty $d IsReadOnly $true
 }
 
 # 3. Build pass.
 $env:MIG29_OUT = Join-Path $Project "MiG29SMTBuild"
-Remove-Item "$env:MIG29_OUT\*.nobp" -ErrorAction SilentlyContinue
+Remove-Item "$env:MIG29_OUT/*.nobp" -ErrorAction SilentlyContinue
 $log = Join-Path $Project "MiG29SMTOut_build.log"
 $code = Invoke-Unity @('-executeMethod', 'MiG29SMTTools.MiG29Builder.BuildAll') $log
 Select-String -Path $log -Pattern '\[MiG29\]|\[Blueprinter\]|error CS|Exception' | Where-Object { $_.Line -notmatch 'Licensing' } | ForEach-Object { $_.Line }
@@ -80,21 +81,21 @@ Get-ChildItem $env:MIG29_OUT -Filter *.nobp | ForEach-Object { "OUTPUT $($_.Full
 
 # 4. The instruments plugin (BepInEx, ships next to the .nobp): built against the installed game.
 $repo = Split-Path $PSScriptRoot
-$plugin = Join-Path $repo "unity\MiG29Instruments"
+$plugin = Join-Path $repo "unity/MiG29Instruments"
 # one version for the mod and the plugin: mod managers (NOMNOM / NOMM) match the release version against the DLL's
-$ver = [regex]::Match((Get-Content (Join-Path $repo "unity\MiG29Tools\MiG29Builder.cs") -Raw), 'Version = "([\d.]+)"').Groups[1].Value
-if (-not (Select-String -Path "$plugin\Plugin.cs" -SimpleMatch "ModVersion = `"$ver`"" -Quiet)) { throw "Plugin.cs ModVersion must be $ver (MiG29Builder.Version)" }
-dotnet build "$plugin\MiG29SMTInstruments.csproj" -c Release -o "$env:MIG29_OUT" -nologo -v q "-p:Version=$ver" | Select-String "error|Warn" | ForEach-Object { $_.Line }
+$ver = [regex]::Match((Get-Content (Join-Path $repo "unity/MiG29Tools/MiG29Builder.cs") -Raw), 'Version = "([\d.]+)"').Groups[1].Value
+if (-not (Select-String -Path "$plugin/Plugin.cs" -SimpleMatch "ModVersion = `"$ver`"" -Quiet)) { throw "Plugin.cs ModVersion must be $ver (MiG29Builder.Version)" }
+dotnet build "$plugin/MiG29SMTInstruments.csproj" -c Release -o "$env:MIG29_OUT" -nologo -v q "-p:Version=$ver" | Select-String "error|Warn" | ForEach-Object { $_.Line }
 if ($LASTEXITCODE -ne 0) { throw "instruments plugin build failed" }
 Get-ChildItem $env:MIG29_OUT -Filter MiG29SMTInstruments.dll | ForEach-Object { "OUTPUT $($_.FullName) $($_.Length)" }
 
 # 5. One archive with everything (the first release asset; what NOMNOM / NOMM install): .nobp + plugin + credits.
 $zip = Join-Path $env:MIG29_OUT "MiG-29SMT-Mod_$ver.zip"
-Remove-Item "$env:MIG29_OUT\MiG-29SMT-Mod_*.zip" -ErrorAction SilentlyContinue
-Copy-Item (Join-Path $repo "mod\CREDITS.txt") $env:MIG29_OUT -Force
-Compress-Archive -Path "$env:MIG29_OUT\MiG-29SMT_$ver.nobp", "$env:MIG29_OUT\MiG29SMTInstruments.dll", "$env:MIG29_OUT\CREDITS.txt" -DestinationPath $zip -Force
+Remove-Item "$env:MIG29_OUT/MiG-29SMT-Mod_*.zip" -ErrorAction SilentlyContinue
+Copy-Item (Join-Path $repo "mod/CREDITS.txt") $env:MIG29_OUT -Force
+Compress-Archive -Path "$env:MIG29_OUT/MiG-29SMT_$ver.nobp", "$env:MIG29_OUT/MiG29SMTInstruments.dll", "$env:MIG29_OUT/CREDITS.txt" -DestinationPath $zip -Force
 "OUTPUT $zip $((Get-Item $zip).Length)"
 if ($Release -and $code -eq 0) {
-    Get-ChildItem $env:MIG29_OUT -Filter *.nobp | ForEach-Object { python (Join-Path $PSScriptRoot "backup_build.py") $_.FullName --note $Note }
+    Get-ChildItem $env:MIG29_OUT -Filter *.nobp | ForEach-Object { & $py (Join-Path $PSScriptRoot "backup_build.py") $_.FullName --note $Note }
 }
 exit $code
