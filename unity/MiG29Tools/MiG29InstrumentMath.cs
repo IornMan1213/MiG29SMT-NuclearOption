@@ -20,6 +20,14 @@ namespace MiG29SMTTools
         public bool blink;                             // ~2 Hz flasher for warnings
         public float rwrPower;                         // 0..1, strongest radar painting us
         public List<(float bearing, int type)> rwr = new List<(float, int)>();   // bearing from the nose, threat type 0..5 (П З Н Х F О), -1 for a missile
+        // stores page (MiG29SMTInstruments): weapon stations, countermeasures, the first target, fuel in drop tanks
+        public List<(string name, int ammo, int full, bool selected)> stations = new List<(string, int, int, bool)>();
+        public List<(string name, int ammo)> countermeasures = new List<(string, int)>();
+        public string target;
+        public float targetKm, extFuelKg;
+        // signature page: engine heat 0..1 of its maximum (afterburner included), radar cross-section now and clean, own radar on
+        public float irFrac, rcs = 1f, rcsClean = 1f;
+        public bool radarOn;
     }
 
     public static class MiG29InstrumentMath
@@ -115,6 +123,35 @@ namespace MiG29SMTTools
             C("ab", s.throttle > 0.9f && (s.rpmL > 90 || s.rpmR > 90));
             bool anyWarn = on.Count > 0 && !(on.Count == 1 && (on.Contains("cau_brake") || on.Contains("cau_fod") || on.Contains("cau_ab") || on.Contains("cau_flaps")));
             C("master", anyWarn && (s.airborne || s.fireL || s.fireR) && s.blink);
+
+            // up-front control panel keys (SMT): each lights with its flight event
+            void U(string id, bool v) { if (v) on.Add("ufc_" + id); }
+            string sel = null; int selAmmo = 0;
+            foreach (var st in s.stations) if (st.selected) { sel = (st.name ?? "").ToUpperInvariant(); selAmmo = st.ammo; }
+            bool gun = sel != null && (sel.Contains("GSH") || sel.Contains("GUN") || sel.Contains("CANNON") || sel.Contains("MM"));
+            int flares = 0, chaff = 0, cmCount = 0;
+            foreach (var cm in s.countermeasures)
+            {
+                var nm = (cm.name ?? "").ToUpperInvariant();
+                if (nm.Contains("FLARE")) { flares += cm.ammo; cmCount++; }
+                else if (nm.Contains("CHAFF")) { chaff += cm.ammo; cmCount++; }
+            }
+            U("cnpy", s.canopyOpen);
+            U("brake", s.brake > 0.1f);
+            U("flap", s.gearDown && !s.gearMoving && s.airborne);
+            U("gear", s.gearDown && !s.gearMoving || s.gearMoving && s.blink);
+            U("arm", sel != null && !gun && selAmmo > 0);
+            U("gun", gun && selAmmo > 0);
+            U("lock", s.lockedOn);
+            U("msl", s.missileIncoming && s.blink);
+            U("hyd", s.hydraulic < 150);
+            U("eng", s.damagedL || s.damagedR || s.fireL || s.fireR || Mathf.Max(s.rpmL, s.rpmR) > 104);
+            U("ab", s.throttle > 0.9f && (s.rpmL > 90 || s.rpmR > 90));
+            U("intk", FodClosed(s.onGround, s.iasKmh, s.rpmL, s.rpmR));
+            U("fuel", s.fuelFrac < 0.25f && (s.fuelFrac >= 0.10f || s.blink));
+            U("ptb", s.ptbEmpty);
+            U("cms", cmCount > 0 && (flares <= 6 || chaff <= 6));
+            U("alt", s.airborne && !s.gearDown && s.radAltM < 60 && s.vsMs < -2 && s.blink);
 
             // SPO-15: sector lamps nearest each emitter's bearing, power ladder, threat type
             foreach (var (bearing, type) in s.rwr)

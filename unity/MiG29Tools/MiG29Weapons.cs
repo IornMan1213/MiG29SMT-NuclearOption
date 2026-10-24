@@ -27,7 +27,7 @@ namespace MiG29SMTTools
         [Serializable] class PartDump { public string name; public float[] vertices, normals, uvs; public int[] triangles; }
         [Serializable] class Dump { public PartDump[] parts; }
 
-        public class Result { public ScriptableObject r77Mount, r73Mount, r27Mount, r27tMount, r60Mount, gunMount, ptb1500Mount, ptb1150Mount, r73OuterMount, r60OuterMount; }
+        public class Result { public ScriptableObject r77Mount, r73Mount, r27Mount, r27tMount, r60Mount, gunMount, ptb1500Mount, ptb1150Mount, r73OuterMount, r60OuterMount, kh29Mount, kh31Mount, kab500Mount; }
 
         public delegate T Saver<T>(T obj, string path) where T : UnityEngine.Object;
 
@@ -208,6 +208,104 @@ namespace MiG29SMTTools
                 missileY: -0.10f - 0.10f, r77Info, 3.60f, 0.10f, $"{Dir}/mig29_R77_AKU170.prefab", InnerSlope, 0.75f);
             var r77Mount = CloneMount("AAM2_single", "mig29smt_R77_mount", r77MountPrefab, r77Info, "mig29smt_R77_single", "R-77", mass: 220f, emptyMass: 45f, drag: 0.06f);
 
+            // ---------- strike stores (the SMT's air-to-ground role): each on the stock weapon it plays like, so the game's targeting,
+            // guidance and AI use them as they do the stock one; the real weapon's mass, warhead and motor ----------
+            // Kh-29L: heavy laser-guided missile, 680 kg with a 320 kg warhead, 10 km class (stock AGM_heavy base)
+            // Laser homing (the stock laser rocket's LaserSeeker, in place of the AGM_heavy's optical seeker, which showed it as an optical
+            // missile; user, SMT 0.2.0): it homes on a target lased by the SMT's own designator (the KR-67's, one target out to 15 km) or by
+            // any friendly designator, inside its seeker cone
+            var kh29 = MakeMissile("AGM_heavy", "mig29smt_Kh29L", meshes["KH29L"], mat, length: 3.90f, radius: 0.19f, seekerFrom: "Rocket2", seekerType: "LaserSeeker");
+            TuneSeeker(kh29, "LaserSeeker", so =>
+            {
+                so.FindProperty("maxSeekerAngle").floatValue = 15f;      // the 24N1 seeker's wider field of view than a rocket's
+                so.FindProperty("errorRate").floatValue = 3f;
+                so.FindProperty("maxTargetSpeed").floatValue = 40f;      // vehicles and ships
+                so.FindProperty("selfDestructAtSpeed").floatValue = 60f; // glides on after burnout: only gives up when nearly stalled
+                so.FindProperty("guidanceDelay").floatValue = 0.5f;
+            });
+            Tune(kh29, so =>
+            {
+                so.FindProperty("mass").floatValue = 680f;
+                so.FindProperty("blastYield").floatValue = 220f;
+                so.FindProperty("pierceDamage").floatValue = 3200f;
+                so.FindProperty("finArea").floatValue = 0.9f;
+                Motor(so, 0, thrust: 46000f, burn: 5.0f, fuel: 210f, tvc: 0f);
+            });
+            var kh29Prefab = SavePrefab(kh29, $"{Dir}/mig29_Kh29L.prefab");
+            var kh29Def = CloneDef("AGM_heavy", "mig29smt_Kh29L_def", d =>
+            {
+                d.FindProperty("jsonKey").stringValue = "mig29smt_Kh29L";
+                d.FindProperty("unitName").stringValue = "Kh-29L";
+                d.FindProperty("description").stringValue = "Kh-29L (AS-14 Kedge). Heavy laser-guided air-to-surface missile with a 320 kg warhead, for bunkers, ships and hardened targets.";
+                d.FindProperty("mass").floatValue = 680f;
+                d.FindProperty("unitPrefab").objectReferenceValue = kh29Prefab;
+            });
+            SetDefinition(kh29Prefab, kh29Def);
+            var kh29Info = CloneInfo("AGM_heavy", "mig29smt_Kh29L_info", kh29Prefab, "Kh-29L", "Kh-29L",
+                "Heavy laser-guided missile, 320 kg warhead. Lock the target (the SMT lases it, or a friendly designator does) and fire: it homes on the laser spot. Hardened and large targets out to about 10 km.",
+                minRange: 1500f, maxRange: 12000f, minAlignment: 25f, cost: 0.80f, massPerRound: 680f, infoAsset: "info_AGM_heavy");
+            SetLaserGuided(kh29Info);
+            var kh29MountPrefab = MakeMount("AGM_heavy_single", "mig29smt_Kh29L_AKU58", "pylon", "agm1", meshes["AKU58"], meshes["KH29L"], mat,
+                missileY: -0.17f - 0.19f - 0.018f, kh29Info, 3.90f, 0.19f, $"{Dir}/mig29_Kh29L_AKU58.prefab", InnerSlope, 0.95f);
+            var kh29Mount = CloneMount("AGM_heavy_single", "mig29smt_Kh29L_mount", kh29MountPrefab, kh29Info, "mig29smt_Kh29L_single", "Kh-29L", mass: 760f, emptyMass: 80f, drag: 0.12f);
+
+            // Kh-31P: ramjet anti-radiation missile, 600 kg, Mach 3+, 100 km class (stock ARM1 base: boost, then a long sustain burn)
+            var kh31 = MakeMissile("ARM1", "mig29smt_Kh31P", meshes["KH31P"], mat, length: 4.70f, radius: 0.18f, seekerFrom: null, seekerType: null);
+            Tune(kh31, so =>
+            {
+                so.FindProperty("mass").floatValue = 600f;
+                so.FindProperty("blastYield").floatValue = 90f;
+                Motor(so, 0, thrust: 70000f, burn: 2.5f, fuel: 60f, tvc: 0f);
+                Motor(so, 1, thrust: 26000f, burn: 18f, fuel: 210f, tvc: 0f);
+            });
+            var kh31Prefab = SavePrefab(kh31, $"{Dir}/mig29_Kh31P.prefab");
+            var kh31Def = CloneDef("ARM1", "mig29smt_Kh31P_def", d =>
+            {
+                d.FindProperty("jsonKey").stringValue = "mig29smt_Kh31P";
+                d.FindProperty("unitName").stringValue = "Kh-31P";
+                d.FindProperty("description").stringValue = "Kh-31P (AS-17 Krypton). Ramjet-powered anti-radiation missile: homes on enemy radars at over three times the speed of sound.";
+                d.FindProperty("mass").floatValue = 600f;
+                d.FindProperty("unitPrefab").objectReferenceValue = kh31Prefab;
+            });
+            SetDefinition(kh31Prefab, kh31Def);
+            var kh31Info = CloneInfo("ARM1", "mig29smt_Kh31P_info", kh31Prefab, "Kh-31P", "Kh-31P",
+                "Ramjet anti-radiation missile. Long range, very fast: for SAM and ship radars.",
+                minRange: 3000f, maxRange: 100000f, minAlignment: 45f, cost: 1.20f, massPerRound: 600f);
+            var kh31MountPrefab = MakeMount("ARM1_single", "mig29smt_Kh31P_AKU58", "pylon", "agm1", meshes["AKU58"], meshes["KH31P"], mat,
+                missileY: -0.17f - 0.18f - 0.018f, kh31Info, 4.70f, 0.18f, $"{Dir}/mig29_Kh31P_AKU58.prefab", InnerSlope, 0.95f);
+            var kh31Mount = CloneMount("ARM1_single", "mig29smt_Kh31P_mount", kh31MountPrefab, kh31Info, "mig29smt_Kh31P_single", "Kh-31P", mass: 680f, emptyMass: 80f, drag: 0.12f);
+
+            // KAB-500L: laser-guided 500 kg bomb (stock 500 kg glide bomb base)
+            // laser homing as the Kh-29L; a bomb has no motor, so never the rocket seeker's self-destruct below 200 m/s (it would burst
+            // soon after release)
+            var kab = MakeMissile("bomb_500_glide", "mig29smt_KAB500L", meshes["KAB500L"], mat, length: 3.05f, radius: 0.20f, seekerFrom: "Rocket2", seekerType: "LaserSeeker");
+            Tune(kab, so => so.FindProperty("mass").floatValue = 534f);
+            TuneSeeker(kab, "LaserSeeker", so =>
+            {
+                so.FindProperty("maxSeekerAngle").floatValue = 20f;      // dropped from above: a wide basket
+                so.FindProperty("errorRate").floatValue = 4f;
+                so.FindProperty("maxTargetSpeed").floatValue = 25f;
+                so.FindProperty("selfDestructAtSpeed").floatValue = 0f;
+                so.FindProperty("guidanceDelay").floatValue = 1.0f;      // clear of the jet first
+            });
+            var kabPrefab = SavePrefab(kab, $"{Dir}/mig29_KAB500L.prefab");
+            var kabDef = CloneDef("Bomb_500_glide", "mig29smt_KAB500L_def", d =>
+            {
+                d.FindProperty("jsonKey").stringValue = "mig29smt_KAB500L";
+                d.FindProperty("unitName").stringValue = "KAB-500L";
+                d.FindProperty("description").stringValue = "KAB-500L. 500 kg laser-guided bomb: drop it towards a designated target and it steers itself in.";
+                d.FindProperty("mass").floatValue = 534f;
+                d.FindProperty("unitPrefab").objectReferenceValue = kabPrefab;
+            });
+            SetDefinition(kabPrefab, kabDef);
+            var kabInfo = CloneInfo("bomb_500_glide", "mig29smt_KAB500L_info", kabPrefab, "KAB-500L", "KAB-500L",
+                "500 kg laser-guided bomb. Lock the target so it is lased (by the SMT or a friendly designator) and release in range: it steers onto the laser spot.",
+                minRange: 1000f, maxRange: 15000f, minAlignment: 60f, cost: 0.35f, massPerRound: 534f, infoAsset: "info_bomb_500_glide");
+            SetLaserGuided(kabInfo);
+            var kabMountPrefab = MakeMount("bomb_500_glide_single", "mig29smt_KAB500L_BD3", "pylon", "bomb_500_glide", meshes["BD3"], meshes["KAB500L"], mat,
+                missileY: -0.14f - 0.20f, kabInfo, 3.05f, 0.20f, $"{Dir}/mig29_KAB500L_BD3.prefab");
+            var kabMount = CloneMount("bomb_500_glide_single", "mig29smt_KAB500L_mount", kabMountPrefab, kabInfo, "mig29smt_KAB500L_single", "KAB-500L", mass: 570f, emptyMass: 36f, drag: 0.10f);
+
             // outer pylons: steeper fairing, own launchers (same missiles, same names in the loadout menu)
             var r73OuterPrefab = MakeMount("AAM1_single", "mig29smt_R73_APU73_outer", "pylon", "aam1", meshes["APU73_O"], meshes["R73"], mat,
                 missileY: -0.10f - 0.085f, r73Info, 2.90f, 0.085f, $"{Dir}/mig29_R73_APU73_outer.prefab", OuterSlope, 1.05f);
@@ -225,8 +323,9 @@ namespace MiG29SMTTools
             var ptb1150Mount = BuildDropTank("PTB1150", "PTB-1150", meshes["PTB1150"], meshes["PTB_PYLON_W"], mat, length: 4.6f, halfHeight: 0.32f, radius: 0.32f,
                 pylonDepth: 0.10f, fullMass: 1000f, pylonMass: 30f, drag: 0.08f, rcs: 0.05f,
                 desc: "PTB-1150 wing drop tanks: 1,150 litres (about 905 kg) of fuel each, used before the internal fuel. Select them and fire to drop them, or press the jettison key (Ctrl+J by default).");
-            Debug.Log("[MiG29] weapons built: R-77, R-73, R-27R, R-27T, R-60M, GSh-30-1, PTB-1500, PTB-1150");
+            Debug.Log("[MiG29] weapons built: R-77, R-73, R-27R, R-27T, R-60M, Kh-29L, Kh-31P, KAB-500L, GSh-30-1, PTB-1500, PTB-1150");
             return new Result { r77Mount = r77Mount, r73Mount = r73Mount, r27Mount = r27Mount, r27tMount = r27tMount, r60Mount = r60Mount, gunMount = gunMount,
+                kh29Mount = kh29Mount, kh31Mount = kh31Mount, kab500Mount = kabMount,
                 r73OuterMount = r73OuterMount, r60OuterMount = r60OuterMount,
                 ptb1500Mount = ptb1500Mount, ptb1150Mount = ptb1150Mount };
         }
@@ -565,9 +664,9 @@ namespace MiG29SMTTools
         }
 
         static ScriptableObject CloneInfo(string src, string name, GameObject prefab, string weaponName, string shortName, string desc,
-            float minRange, float maxRange, float minAlignment, float cost, float massPerRound)
+            float minRange, float maxRange, float minAlignment, float cost, float massPerRound, string infoAsset = null)
         {
-            var info = Clone(src + "_info", name);
+            var info = Clone(infoAsset ?? src + "_info", name);   // most stock infos are named <weapon>_info, a few info_<weapon>
             var so = new SerializedObject(info);
             so.FindProperty("weaponPrefab").objectReferenceValue = prefab;
             so.FindProperty("weaponName").stringValue = weaponName;
@@ -580,6 +679,14 @@ namespace MiG29SMTTools
             so.FindProperty("massPerRound").floatValue = massPerRound;
             so.ApplyModifiedPropertiesWithoutUndo();
             return info;
+        }
+
+        // the weapon info's laser flag: the game's HUD then shows the laser-designation state for it, as for the stock laser rockets
+        static void SetLaserGuided(ScriptableObject info)
+        {
+            var so = new SerializedObject(info);
+            so.FindProperty("laserGuided").boolValue = true;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         static GameObject MakeMount(string basePrefab, string name, string pylonChild, string missileChild, Mesh launcher, Mesh missile, Material mat,
@@ -729,10 +836,10 @@ namespace MiG29SMTTools
                 }
             }
             sets.GetArrayElementAtIndex(inner).FindPropertyRelative("name").stringValue = "Inner Pylons";
-            AddOptions(inner, w.r77Mount, w.r27Mount, w.r27tMount, w.r73Mount, w.r60Mount, w.ptb1150Mount);
+            AddOptions(inner, w.r77Mount, w.r27Mount, w.r27tMount, w.r73Mount, w.r60Mount, w.kh29Mount, w.kh31Mount, w.kab500Mount, w.ptb1150Mount);
             AddStock(sets.GetArrayElementAtIndex(inner), InnerExtra);
             sets.GetArrayElementAtIndex(middle).FindPropertyRelative("name").stringValue = "Middle Pylons";
-            AddOptions(middle, w.r77Mount, w.r73Mount, w.r60Mount);
+            AddOptions(middle, w.r77Mount, w.r73Mount, w.r60Mount, w.kh31Mount);
             AddStock(sets.GetArrayElementAtIndex(middle), MiddleExtra);
             // The middle pylons are 0.74 m outboard of the inner ones: side-by-side racks (GPO-500 x2 is 0.8 m wide) on both touched
             // (user screenshot, v0.8.7). The middle pylons take single stores, as on the real jet; the inner keep the racks.
@@ -841,6 +948,8 @@ namespace MiG29SMTTools
                 ("Long-Range CAP (PTB-1500 / R-77 / R-73)", 1.0f, new UnityEngine.Object[] { w.gunMount, w.ptb1500Mount, w.r77Mount, w.r77Mount, w.r73OuterMount, null }),
                 ("Mixed (R-27R / R-77 / R-73)", 0.8f, new UnityEngine.Object[] { w.gunMount, null, w.r27Mount, w.r77Mount, w.r73OuterMount, null }),
                 ("Dogfight (R-27T / R-73 / R-60M)", 0.6f, new UnityEngine.Object[] { w.gunMount, null, w.r27tMount, w.r73Mount, w.r60OuterMount, null }),
+                ("Precision Strike (Kh-29L / KAB-500L / R-73)", 0.8f, new UnityEngine.Object[] { w.gunMount, w.ptb1500Mount, w.kh29Mount, w.kab500Mount, w.r73OuterMount, null }),
+                ("SEAD (Kh-31P / R-77 / R-73)", 0.8f, new UnityEngine.Object[] { w.gunMount, w.ptb1500Mount, w.kh31Mount, w.r77Mount, w.r73OuterMount, null }),
                 ("Strike (FAB-500 / rockets / R-73)", 0.7f, new UnityEngine.Object[] { w.gunMount, null, Stock("bomb_500_single"), Stock("Rocket2_4Pod"), w.r73OuterMount, null }),
                 ("Ferry (3 drop tanks / R-73)", 1.0f, new UnityEngine.Object[] { w.gunMount, w.ptb1500Mount, w.ptb1150Mount, w.r73Mount, null, null }),
             };

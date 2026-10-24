@@ -433,6 +433,9 @@ namespace MiG29SMTTools
                 ("Fulcrum OVT Splinter 917", Livery("MiG29_livery_ovt", ImportColor("mig29_basecolor_ovt.png"), new Color32(150, 178, 214, 255))),
                 ("Fulcrum White 44", Livery("MiG29_livery_white44", ImportColor("mig29_basecolor_white44.png"), new Color32(235, 236, 238, 255))),
                 ("Fulcrum LII Gromov 84", Livery("MiG29_livery_lii", ImportColor("mig29_basecolor_lii.png"), new Color32(190, 194, 198, 255))),
+                // MiG-29SMT schemes (tools/livery_profiles.py smt_vks / smt_dark)
+                ("SMT VKS Grey 26", Livery("MiG29_livery_smt_vks", ImportColor("mig29_basecolor_smt_vks.png"), new Color32(150, 162, 170, 255))),
+                ("SMT Dark Grey 52", Livery("MiG29_livery_smt_dark", ImportColor("mig29_basecolor_smt_dark.png"), new Color32(78, 84, 90, 255))),
             };
             int perFaction = 4 + profiles.Count + (custom != null ? 1 : 0);
             liveries.arraySize = factions.Count * perFaction;

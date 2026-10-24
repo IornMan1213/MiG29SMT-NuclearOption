@@ -6,6 +6,8 @@ Dimensions from open sources: R-73 2.90 m x 0.17 m, canard span 0.385 m, wing sp
 R-27R 4.08 m x 0.23 m, canard span 0.97 m ("butterfly" control fins), wing span 0.80 m;
 R-27T 3.80 m x 0.23 m (same airframe, short infrared nose with a glass dome);
 R-60M 2.09 m x 0.12 m, wing span 0.39 m, with its APU-60 rail.
+MiG-29SMT strike stores: Kh-29L 3.9 m x 0.38 m (tail span 1.1 m), Kh-31P 4.7 m x 0.36 m with four ramjet intakes (wing span 0.91 m),
+both on the AKU-58; KAB-500L 3.05 m x 0.40 m on a BD3-UMK rack.
 Drop tanks: PTB-1500 centreline tank (1,500 L, 4.9 m, slightly flattened to fit between the engine nacelles) and PTB-1150 wing
 tank (1,150 L, 4.6 m x 0.64 m), each with a short pylon adapter whose bottom touches the tank top.
 """
@@ -229,6 +231,76 @@ def r77():
     return m
 
 
+def kh29l():
+    """Kh-29L (AS-14 Kedge), laser-guided: 3.9 m, 380 mm body, a short glass seeker dome on a cylindrical nose, small destabiliser
+    and control canards near the nose, and a large cruciform tail wing (span 1.10 m). Olive drab."""
+    m = Mesh(); L = 3.90; R = 0.19; zt = L / 2
+    prof = [(zt, 0), (zt - 0.02, 0.06), (zt - 0.06, 0.10), (zt - 0.10, 0.12), (zt - 0.12, 0.13),           # glass dome
+            (zt - 0.13, 0.15), (zt - 0.30, 0.175), (zt - 0.55, R), (-zt + 0.10, R), (-zt + 0.04, 0.17), (-zt, 0.15)]
+    m.revolve(prof, seg=28, cells=lambda z: "glass" if z > zt - 0.125 else ("yellow" if zt - 0.95 < z < zt - 0.88 else "olive"))
+    for roll in (45, 135, 225, 315):
+        m.fin([(R * 0.9, zt - 0.40), (R * 0.9, zt - 0.58), (R + 0.07, zt - 0.58)], roll, 0.008, "olive")                 # destabilisers
+        m.fin([(R, zt - 0.75), (R, zt - 1.00), (0.33, zt - 0.97), (0.33, zt - 0.85)], roll, 0.010, "olive")               # control canards
+        m.fin([(R, -zt + 1.05), (R, -zt + 0.08), (0.55, -zt + 0.10), (0.55, -zt + 0.35)], roll, 0.012, "olive")           # tail wings
+    return m
+
+
+def kh31p():
+    """Kh-31P (AS-17 Krypton), anti-radiation, ramjet: 4.7 m, 360 mm body, dark dielectric nose, four ramjet air intakes along the
+    rear body (boxes with open fronts), small mid-body wings (span 0.91 m) and tail fins in line with the intakes. Light grey."""
+    m = Mesh(); L = 4.70; R = 0.18; zt = L / 2
+    prof = [(zt, 0), (zt - 0.05, 0.05), (zt - 0.18, 0.10), (zt - 0.36, 0.14), (zt - 0.55, 0.165), (zt - 0.75, R),
+            (-zt + 0.06, R), (-zt + 0.02, 0.16), (-zt, 0.14)]
+    m.revolve(prof, seg=28, cells=lambda z: "dgrey" if z > zt - 0.75 else ("yellow" if zt - 1.05 < z < zt - 0.98 else "lgrey"))
+    for roll in (0, 90, 180, 270):                                        # intakes on the "+" axes, wings and fins between
+        phi = math.radians(roll); er = np.array([math.cos(phi), math.sin(phi), 0.0]); et = np.array([-math.sin(phi), math.cos(phi), 0.0])
+        z0, z1 = -zt + 0.25, zt - 2.05
+        for s0, s1, t0, t1 in ((R - 0.01, R + 0.10, -0.055, -0.045), (R - 0.01, R + 0.10, 0.045, 0.055), (R + 0.09, R + 0.10, -0.055, 0.055)):
+            # side walls and outer wall of the intake duct (a box open at the front)
+            corners = [s0 * er + t0 * et, s1 * er + t0 * et, s1 * er + t1 * et, s0 * er + t1 * et]
+            r0 = [c + np.array([0, 0, z0]) for c in corners]; r1 = [c + np.array([0, 0, z1]) for c in corners]
+            mid = np.mean(r0 + r1, axis=0)
+            for i in range(4):
+                q = [r0[i], r0[(i + 1) % 4], r1[(i + 1) % 4], r1[i]]
+                n = np.cross(q[1] - q[0], q[3] - q[0]); n = n if np.dot(n, np.mean(q, axis=0) - mid) > 0 else -n
+                m.quad(*q, "lgrey", n)
+        lip = [R * er + (-0.055) * et, (R + 0.10) * er + (-0.055) * et, (R + 0.10) * er + 0.055 * et, R * er + 0.055 * et]
+        m.quad(*[p + np.array([0, 0, z1 - 0.01]) for p in lip], "black", np.array([0, 0, 1.0]))                      # dark duct mouth
+    for roll in (45, 135, 225, 315):
+        m.fin([(R, 0.55), (R, -0.25), (0.455, -0.15), (0.455, 0.25)], roll, 0.010, "lgrey")                           # mid wings
+        m.fin([(R, -zt + 0.60), (R, -zt + 0.06), (0.38, -zt + 0.08), (0.38, -zt + 0.24)], roll, 0.010, "lgrey")       # tail fins
+    return m
+
+
+def kab500l():
+    """KAB-500L laser-guided bomb: 3.05 m, 400 mm body, a gimballed laser seeker head (glass ring) on a slim neck, four long
+    forward strakes and four tail fins; olive with a yellow band."""
+    m = Mesh(); L = 3.05; R = 0.20; zt = L / 2
+    prof = [(zt, 0), (zt - 0.03, 0.06), (zt - 0.10, 0.10), (zt - 0.16, 0.11), (zt - 0.20, 0.08), (zt - 0.30, 0.09),  # seeker head and neck
+            (zt - 0.45, 0.15), (zt - 0.65, R), (-zt + 0.55, R), (-zt + 0.15, 0.15), (-zt, 0.11)]
+    m.revolve(prof, seg=28, cells=lambda z: "glass" if z > zt - 0.10 else ("dgrey" if z > zt - 0.32 else
+                                                                            ("yellow" if zt - 0.85 < z < zt - 0.78 else "olive")))
+    for roll in (45, 135, 225, 315):
+        m.fin([(R * 0.9, zt - 0.55), (R, zt - 1.45), (0.30, zt - 1.35), (0.30, zt - 0.95)], roll, 0.008, "olive")      # strakes
+        m.fin([(0.15, -zt + 0.45), (0.12, -zt + 0.02), (0.40, -zt + 0.05), (0.40, -zt + 0.22)], roll, 0.010, "olive")  # tail fins
+    return m
+
+
+def aku58(deg=2.5):
+    """AKU-58 launcher for the Kh-29 / Kh-31: as long as the AKU-470 (the inner fairing's flat underside), deeper and wider for the
+    heavier missiles; missile body top at y = -0.17."""
+    return levelled(launcher(-1.15, 0.95, 0.065, 0.17, nose=0.50, tail=0.30, rail_depth=0.018, rail_half_w=0.032), 0.95, 0.17, deg)
+
+
+def bd3_rack():
+    """BD3-UMK bomb rack for the KAB-500: a short streamlined beam with sway braces; bomb top at y = -0.14."""
+    m = Mesh()
+    m.box(-0.07, 0.07, -0.12, 0.0, -0.70, 0.70, "lgrey", nose_taper=0.30)
+    for z in (-0.25, 0.25):                                              # sway braces resting on the bomb
+        m.box(-0.13, 0.13, -0.145, -0.11, z - 0.03, z + 0.03, "dgrey")
+    return m
+
+
 def levelled(m, z1, depth, deg):
     """The pylon stations follow their fairings, which slope `deg` nose-down; the missile must stay parallel to the fuselage (user
     reference photo, v0.8.9). In the station frame a level line rises toward the nose, so the beam's bottom and the rail are tilted by
@@ -385,6 +457,8 @@ if __name__ == "__main__":
              apu73().dump("APU73"), aku470().dump("AKU470"), apu60().dump("APU60"),
              apu73(5.0, 0.04).dump("APU73_O"), apu60(5.0, 0.04).dump("APU60_O"),   # outer pylons: their fairing slopes 5 deg
              r77().dump("R77"), aku170().dump("AKU170"),                            # MiG-29SMT: R-77 (RVV-AE) on its AKU-170
+             kh29l().dump("KH29L"), kh31p().dump("KH31P"), kab500l().dump("KAB500L"),  # MiG-29SMT strike stores
+             aku58().dump("AKU58"), bd3_rack().dump("BD3"),
              ptb1500().dump("PTB1500"), ptb1150().dump("PTB1150"),
              ptb_pylon(0.08, 1.9, 0.12).dump("PTB_PYLON_C"), ptb_pylon(0.10, 1.6, 0.10).dump("PTB_PYLON_W")]
     json.dump({"parts": parts}, open(OUT + "/missiles.json", "w"))

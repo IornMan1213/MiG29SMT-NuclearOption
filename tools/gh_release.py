@@ -23,7 +23,7 @@ def api(method, url, tok, data=None, ctype="application/json"):
 def main():
     ver = sys.argv[1]; pre = "--prerelease" in sys.argv
     log = open(os.path.join(ROOT, "CHANGELOG.md"), encoding="utf-8").read()
-    m = re.search(rf"^## {re.escape(ver)}[^\n]*\n(.*?)(?=^## )", log, re.S | re.M)
+    m = re.search(rf"^## (?:SMT )?{re.escape(ver)}[^\n]*\n(.*?)(?=^## |\Z)", log, re.S | re.M)
     notes = m.group(1).strip() if m else ""
     nobp = os.path.join(ROOT, "builds", f"MiG-29SMT_{ver}.nobp")
     dll = os.path.join(ROOT, "builds", f"MiG29Instruments_{ver}.dll")

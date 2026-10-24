@@ -29,6 +29,9 @@ Copy-Item (Join-Path (Split-Path $PSScriptRoot) "unity/MiG29Tools/*.cs") $dst -F
 $tools = $PSScriptRoot
 $src = "$Project/MiG29SMTSource"
 Push-Location (Split-Path $tools)
+& $py "$tools/fix_winding.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "fix_winding failed" }   # before anything copies body triangles
+& $py "$tools/clean_insignia.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "clean_insignia failed" }
+& $py "$tools/damage_textures.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "damage_textures failed" }   # after fix_winding (mesh)
 & $py "$tools/missile_gen.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "missile_gen failed" }
 & $py "$tools/nozzle_gen.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "nozzle_gen failed" }
 & $py "$tools/nose_bay.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "nose_bay failed" }
@@ -37,6 +40,7 @@ Push-Location (Split-Path $tools)
 & $py "$tools/main_bay_door.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "main_bay_door failed" }
 & $py "$tools/airbrake_cut.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "airbrake_cut failed" }
 & $py "$tools/smt_hump.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "smt_hump failed" }
+& $py "$tools/fod_door.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "fod_door failed" }
 & $py "$tools/main_wells.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "main_wells failed" }
 & $py "$tools/bay_texture.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "bay_texture failed" }
 & $py "$tools/fm_export.py" "$src/fm_unity.json"; if ($LASTEXITCODE -ne 0) { throw "fm_export failed" }

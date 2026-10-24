@@ -59,11 +59,13 @@ namespace MiG29SMTTools
             Attach(root, "EjectionSeat", parts["seat"], modelOffset, mat, save, movePivot: false);
             Attach(root, "tacScreen", parts["screen"], modelOffset, null, save, movePivot: false);
             Attach(root, "warningLights", parts["lamps"], modelOffset, null, save, movePivot: false);
-            // left MFD screen: the MiG29SMTInstruments plugin draws the flight display on it (PfdDriver); a dark screen without it
-            if (parts.TryGetValue("pfd", out var pfd))
+            // the plugin-drawn screens (MiG29SMTInstruments ScreenDriver): left MFD flight display (pfd), right MFD radar warning, engines
+            // and cautions (eng), centre MFD stores page (sms), standby display (stby), UFCP window (ufc); dark screens without the plugin
+            foreach (var sname in new[] { "pfd", "eng", "sms", "stby", "ufc" })
             {
-                var mesh = (Mesh)save(MakeMesh(pfd, v => v + modelOffset, n => n, "MiG29_ck_pfd"), $"{ModDir}/meshes/MiG29_ck_pfd.asset");
-                var o = new GameObject("MiG29_ck_pfd");
+                if (!parts.TryGetValue(sname, out var pfd)) continue;
+                var mesh = (Mesh)save(MakeMesh(pfd, v => v + modelOffset, n => n, "MiG29_ck_" + sname), $"{ModDir}/meshes/MiG29_ck_{sname}.asset");
+                var o = new GameObject("MiG29_ck_" + sname);
                 o.transform.SetParent(cockpitPart, false);
                 o.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
                 o.AddComponent<MeshFilter>().sharedMesh = mesh;

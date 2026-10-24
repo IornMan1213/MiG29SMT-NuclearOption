@@ -255,7 +255,46 @@ def lii():
     return col, marks
 
 
-SCHEMES = {"german": german, "digital741": digital, "ovt": ovt, "white44": white44, "lii": lii}
+def vks_star():
+    """Russian Air Force (VKS) star: red, with a white then a red border."""
+    def draw(dr, W, H):
+        for scale, c in ((1.0, C(200, 25, 30)), (0.86, C(250, 250, 250)), (0.74, C(200, 25, 30))):
+            r = min(W, H) / 2 * 0.95 * scale; cx, cy = W / 2, H / 2
+            pts = [(cx + (r if i % 2 == 0 else r * 0.4) * np.sin(np.pi * i / 5), cy - (r if i % 2 == 0 else r * 0.4) * np.cos(np.pi * i / 5)) for i in range(10)]
+            dr.polygon(pts, fill=tuple(int(x * 255) for x in c) + (255,))
+    return draw
+
+
+def smt_vks():
+    """MiG-29SMT, Russian Air Force: two-tone grey splinter (light blue-grey and medium grey), dark radome, red board number."""
+    L1, L2, RAD = C(176, 186, 192), C(122, 134, 144), C(70, 74, 78)
+    rng = np.random.default_rng(926)
+    seeds = np.stack([rng.uniform(0, 5.6, 70), rng.uniform(-1.0, 2.8, 70), rng.uniform(-5.4, 12, 70)], 1)
+    tone = rng.integers(0, 2, len(seeds))
+    best = np.full(len(P), np.inf); pick = np.zeros(len(P), int)
+    for k, s in enumerate(seeds):
+        dd = (((SYM - s) * np.array([0.7, 1.4, 0.55])) ** 2).sum(1)
+        m = dd < best; best[m] = dd[m]; pick[m] = tone[k]
+    col = np.stack([L1, L2])[pick]
+    col[RADOME] = RAD
+    marks = [Marking(4.0, -0.02, 0.85, 0.46, text("26", C(200, 25, 30), outline=C(250, 250, 250)), SIDE),
+             Marking(*FIN_MARK, 0.55, 0.55, vks_star(), FIN)]
+    return col, marks
+
+
+def smt_dark():
+    """MiG-29SMT in dark grey over light grey, black radome, white board number."""
+    TOPC, LOW, RAD = C(78, 84, 90), C(150, 156, 162), C(30, 30, 32)
+    lower = (Y < -0.10 + 0.03 * np.clip(Z - 4, 0, 5)) & ~TOP
+    col = np.where(lower[:, None], LOW, TOPC)
+    col[FIN] = TOPC
+    col[RADOME] = RAD
+    marks = [Marking(4.0, -0.02, 0.85, 0.46, text("52", C(245, 245, 245)), SIDE),
+             Marking(*FIN_MARK, 0.55, 0.55, vks_star(), FIN)]
+    return col, marks
+
+
+SCHEMES = {"german": german, "digital741": digital, "ovt": ovt, "white44": white44, "lii": lii, "smt_vks": smt_vks, "smt_dark": smt_dark}
 
 
 # ---------------- compose onto the base texture ----------------

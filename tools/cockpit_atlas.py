@@ -329,9 +329,7 @@ GAUGES = [("adi", 384, g_adi), ("hsi", 384, g_hsi), ("asi", 256, g_asi), ("alt",
           ("oxy", 192, g_small("КИСЛОРОД", 0, 150, "КГС/СМ²", -30)), ("hyd", 192, g_small("ГИДРО", 0, 300, "КГС/СМ²", 30)),
           ("cabin", 192, g_small("ВЫСОТА КАБ", 0, 20, "КМ", -60)), ("volt", 192, g_small("V", 0, 30, "", 35)),
           ("radalt", 192, g_small("РВ", 0, 1500, "М", -80)), ("brake", 192, g_small("ТОРМ", 0, 100, "%", -100))]
-for name, size, fn in GAUGES:
-    put("g_" + name, dial(size, fn, bezel=name not in ("spo", "adi"), round_=name != "spo"), (0, 200))   # glossy glass over the faces
-put("adi_ball", adi_ball(), (0, 160))
+# (the SMT's all-glass panel has no round dials, attitude ball or radar frame any more: their cells are left out to make room)
 
 
 def glow(col, size=64):
@@ -473,6 +471,30 @@ def caution(w, h, cols, rows, lit):
 put("caution", caution(512, 160, 6, 4, False), (0, 220))
 put("caution_lit", caution(512, 160, 6, 4, True), (0, 220))
 
+# up-front control panel keys, left to right, top row then bottom: each lights with a flight event (MiG29SMTInstruments plugin,
+# lamps ufc_<id>). (id, caption, colour)
+UFC_KEYS = [("cnpy", "CNPY", AMB), ("brake", "BRAKE", GRN), ("flap", "FLAP", GRN), ("gear", "GEAR", GRN),
+            ("arm", "ARM", GRN), ("gun", "GUN", GRN), ("lock", "LOCK", RED), ("msl", "MSL", RED),
+            ("hyd", "HYD", AMB), ("eng", "ENG", AMB), ("ab", "A/B", GRN), ("intk", "INTK", GRN),
+            ("fuel", "FUEL", AMB), ("ptb", "PTB", AMB), ("cms", "CMS", AMB), ("alt", "ALT", RED)]
+LAYOUT["ufc"] = {"cols": 8, "rows": 2, "ids": [k[0] for k in UFC_KEYS]}
+
+
+def ufc_keys(w, h, lit):
+    img = canvas(w, h, (16, 16, 18)); d = ImageDraw.Draw(img); s = SS
+    tw, th = w * s / 8, h * s / 2
+    for k, (kid, cap, col) in enumerate(UFC_KEYS):
+        x0, y0 = (k % 8) * tw, (k // 8) * th
+        bg = tuple(min(255, int(c * 1.1)) for c in col) if lit else (28, 29, 32)
+        fg = (255, 252, 240) if lit else (150, 152, 150)
+        d.rectangle((x0 + 3 * s, y0 + 3 * s, x0 + tw - 3 * s, y0 + th - 3 * s), fill=bg, outline=(70, 70, 72), width=2 * s)
+        label(d, (x0 + tw / 2, y0 + th / 2), cap, min(th * 0.36, tw * 0.80 / (0.62 * len(cap))), fg, FONT)   # fitted to the key's width
+    return down(img, w, h)
+
+
+put("ufc_keys", ufc_keys(512, 128, False), (0, 220))
+put("ufc_keys_lit", ufc_keys(512, 128, True), (0, 220))
+
 # landing gear indicator plate: three lamps (nose, left, right)
 img = canvas(256, 128, PAINT["black"]); d = ImageDraw.Draw(img)
 label(d, (128 * SS, 18 * SS), "ШАССИ", 14 * SS, (225, 225, 218), FONT_R)
@@ -482,7 +504,7 @@ for gid, (x, y) in (("nose", (128, 52)), ("left", (70, 92)), ("right", (186, 92)
     LAYOUT["gear"].append([gid, x / 256, y / 128, 32 / 256])
 put("gear_plate", down(img, 256, 128))
 
-put("radar_frame", dial(256, g_radar_frame, bezel=False, round_=False), (0, 120))
+
 
 # placards / stencils
 img = canvas(512, 64, PAINT["turq"]); d = ImageDraw.Draw(img)

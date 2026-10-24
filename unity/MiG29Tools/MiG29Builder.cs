@@ -21,11 +21,12 @@ namespace MiG29SMTTools
 
         public const string JsonKey = "mig29smt_Fulcrum";
         public const string DisplayName = "MiG-29SMT";
-        public const string Version = "0.1.0";
+        public const string Version = "0.2.0";
 
         // MiG model frame -> aircraft root. Puts MiG main wheels on the KR-67 main gear and MiG wheels on KR-67 ground line.
         static readonly Vector3 ModelOffset = new Vector3(0f, -0.44f, -2.655f);
         // KR-67 cockpit interior / pilot shifted to sit under the MiG canopy.
+        const int JointIterations = 30;   // PartJoint.solverIterations on every part (stock 6), see the mass-scaling step
         const float ThrustLineY = 0.0f;   // prefab frame: the aircraft's centre-of-mass height
         static readonly Vector3 CockpitShift = new Vector3(0f, -0.44f, -2.23f);
 
@@ -47,10 +48,13 @@ namespace MiG29SMTTools
             // model's nozzle cans give way to the from-scratch RD-33 nozzles (MiG29Nozzles.Build below)
             foreach (var p in data.parts.Where(p => p.name == "body"))
             {
+                var antennaMask = AntennaMask(p.vertices);   // before the spine is raised: the hump moves some antenna vertices
                 ApplyHump(p.vertices, p.normals);
                 MiG29MainGear.CutBodySkin(ref p.vertices, ref p.normals, ref p.uvs, ref p.triangles);
                 p.triangles = MiG29Nozzles.StripModelNozzles(p.vertices, p.triangles, out int stripped);
                 Debug.Log($"[MiG29] nozzles: {stripped} model nozzle triangles stripped");
+                p.triangles = StripDorsalAntenna(antennaMask, p.triangles, out int antenna);
+                Debug.Log($"[MiG29] dorsal antenna: {antenna} triangles stripped");
             }
             MoveStabWicks(data);
             AssetDatabase.DeleteAsset(ModDir + "/meshes"); // no stale meshes in the bundle
@@ -123,6 +127,7 @@ namespace MiG29SMTTools
             MiG29Countermeasures.Setup(go, ModelOffset);
             var oldGun = MiG29Weapons.SetupGun(go, ModelOffset, weapons);
             var displays = MiG29Polish.BuildDisplays(go);
+            MiG29Lod.Apply(go);   // last: every renderer exists now
 
             var prefabPath = ModDir + "/MiG29SMT.prefab";
             var prefab = PrefabUtility.SaveAsPrefabAsset(go, prefabPath);
@@ -132,6 +137,7 @@ namespace MiG29SMTTools
             var parameters = CloneAsset(BaseParameters, ModDir + "/MiG29_parameters.asset");
             var pso = new SerializedObject(parameters);
             pso.FindProperty("aircraftName").stringValue = "MiG-29SMT";
+            pso.FindProperty("rankRequired").intValue = 3;   // rank and price: the 9.12 rank 2 / $50 M, the SMT rank 3 / $90 M (user, 0.9.2 / SMT 0.2.0)
             RemoveBayLoadouts(pso);
             MiG29Weapons.ClearLoadoutSlot(pso, centreSet);
             MiG29Weapons.InsertLoadoutSlot(pso, outerPylonSet);
@@ -153,7 +159,9 @@ namespace MiG29SMTTools
             dso.FindProperty("length").floatValue = 17.32f;
             dso.FindProperty("width").floatValue = 11.36f;
             dso.FindProperty("height").floatValue = 4.73f;
-            dso.FindProperty("value").floatValue = 95f;
+            dso.FindProperty("value").floatValue = 90f;
+            // radar size on the game's scale (stock: KR-67 0.0015 stealth, T/A-30 0.12, A-19 0.6); SMT: some RCS reduction on the 5 m2 MiG-29
+            dso.FindProperty("radarSize").floatValue = 0.15f;
             dso.FindProperty("unitPrefab").objectReferenceValue = prefab;
             dso.FindProperty("aircraftParameters").objectReferenceValue = parameters;
             dso.FindProperty("mapIcon").objectReferenceValue = displays.mapIcon;
@@ -213,10 +221,29 @@ namespace MiG29SMTTools
 
         class Mats { public Material skin, glass; }
 
+        // The model's dorsal antenna behind the canopy (a separate 104-triangle piece, 4.6 cm wide, 0.37 m tall, raked forward) read as
+        // a stray panel standing off the spine in game (user screenshot, v0.9.2): every triangle wholly inside its box goes (MiG frame).
+        static bool[] AntennaMask(float[] v)
+        {
+            var m = new bool[v.Length / 3];
+            for (int i = 0; i < m.Length; i++) { float x = v[i * 3], y = v[i * 3 + 1], z = v[i * 3 + 2]; m[i] = Mathf.Abs(x) < 0.03f && y > 1.06f && y < 1.45f && z > 4.405f && z < 4.735f; }
+            return m;
+        }
+
+        static int[] StripDorsalAntenna(bool[] mask, int[] tris, out int removed)
+        {
+            bool In(int i) => i < mask.Length && mask[i];   // vertices added later (bay door cuts) are never antenna
+            var keep = new List<int>(tris.Length); removed = 0;
+            for (int i = 0; i < tris.Length; i += 3)
+                if (In(tris[i]) && In(tris[i + 1]) && In(tris[i + 2])) removed++;
+                else { keep.Add(tris[i]); keep.Add(tris[i + 1]); keep.Add(tris[i + 2]); }
+            return keep.ToArray();
+        }
+
         static Mats BuildMaterials()
         {
             var tex = new Dictionary<string, Texture2D>();
-            foreach (var name in new[] { "mig29_basecolor", "mig29_basecolor_dmg", "mig29_normal", "mig29_metallic" })
+            foreach (var name in new[] { "mig29_basecolor", "mig29_basecolor_dmg", "mig29_normal", "mig29_normal_dmg", "mig29_metallic" })
             {
                 var dst = $"{ModDir}/textures/{name}.png";
                 File.Copy(Path.Combine(SourceDir, name + ".png"), dst, true);
@@ -224,7 +251,7 @@ namespace MiG29SMTTools
                 var imp = (TextureImporter)AssetImporter.GetAtPath(dst);
                 imp.maxTextureSize = 2048;
                 imp.textureCompression = TextureImporterCompression.CompressedHQ;
-                imp.textureType = name.EndsWith("normal") ? TextureImporterType.NormalMap : TextureImporterType.Default;
+                imp.textureType = name.Contains("normal") ? TextureImporterType.NormalMap : TextureImporterType.Default;
                 imp.sRGBTexture = name.Contains("basecolor");
                 imp.SaveAndReimport();
                 tex[name] = AssetDatabase.LoadAssetAtPath<Texture2D>(dst);
@@ -235,7 +262,8 @@ namespace MiG29SMTTools
             skin.SetTexture("_Livery", tex["mig29_basecolor"]);
             skin.SetTexture("_BasecolorDmg", tex["mig29_basecolor_dmg"]);
             skin.SetTexture("_Normal", tex["mig29_normal"]);
-            skin.SetTexture("_NormalDmg", tex["mig29_normal"]);
+            // stock-format damage maps (tools/damage_textures.py): soot overlay + burn mask in alpha, dented normals
+            skin.SetTexture("_NormalDmg", tex["mig29_normal_dmg"]);
             skin.SetTexture("_Metallic", tex["mig29_metallic"]);
             skin.SetTexture("_AO", null);
             skin.SetFloat("_Glossiness", 0f);
@@ -452,6 +480,7 @@ namespace MiG29SMTTools
                 foreach (var ps in nav.GetComponentsInChildren<ParticleSystem>(true)) { var main = ps.main; main.startSizeMultiplier *= 0.45f; }
                 SetWorld(root, "wingtipvortex_" + s, new Vector3(sx * 5.56f, -0.05f, -1.65f) + ModelOffset);
             }
+            MiG29Vapor.Apply(root, ModelOffset);
         }
 
         // Landing light. The KR-67 hangs it on its front gear door, 3.6 m ahead of the MiG's nose gear; NavLights swaps its flat lamp
@@ -662,8 +691,6 @@ namespace MiG29SMTTools
         {
             var mat = AssetDatabase.LoadAssetAtPath<Material>(ModDir + "/weapons/MiG29_missiles.mat");
             var mesh = CreateOrReplace(AtlasBox("MiG29_intake_blocker", new Vector3(0.56f, 0.58f, 0.02f), 0.625f, 0.375f), ModDir + "/meshes/MiG29_intake_blocker.asset"); // atlas black
-            float fodLen = (FodOpenEnd(1f) - FodHinge(1f)).magnitude + 0.006f;
-            var fodMesh = CreateOrReplace(AtlasBox("MiG29_fod_door", new Vector3(0.52f, 0.015f, fodLen), 0.375f, 0.875f), ModDir + "/meshes/MiG29_fod_door.asset"); // atlas light grey
             foreach (var side in new[] { -1f, 1f })
             {
                 var part = Find(root, side < 0 ? "intake_L" : "intake_R");
@@ -674,18 +701,19 @@ namespace MiG29SMTTools
                 t.gameObject.AddComponent<MeshRenderer>().sharedMaterial = mat;
 
                 // FOD door: on the real jet a hinged panel in the roof of each duct swings down on the ground and seals the intake
-                // (the engines then breathe through the louvres on top of the wing roots). Built open, lying along the duct roof
-                // (y -0.27..-0.32) from its hinge just behind the lower lip; the MiG29SMTInstruments plugin closes it on the ground by
-                // turning the hinge MiG29InstrumentMath.FodClosedDeg down to the duct floor (y -0.85 at z 3.80).
+                // (the engines then breathe through the louvres on top of the wing roots). Its outline is the duct's own cross-section
+                // along the line it closes on (tools/fod_door.py), so it seals the duct wall to wall; a plain rectangle left gaps all
+                // round (user screenshot, v0.9.0). Built open, folded up under the duct roof from its hinge just behind the lower lip;
+                // the MiG29SMTInstruments plugin closes it on the ground by turning the hinge MiG29InstrumentMath.FodClosedDeg down to the
+                // duct floor, and hides it once it is folded away. Light grey face toward the intake mouth, dark back.
                 var hinge = new GameObject(side < 0 ? "MiG29_fod_L" : "MiG29_fod_R").transform;
                 hinge.SetParent(part, false);
                 hinge.SetPositionAndRotation(FodHinge(side) + ModelOffset, Quaternion.identity);
-                var dir = FodOpenEnd(side) - FodHinge(side);
+                var ls = part.lossyScale;                                       // the door is measured in metres: undo any part scale
+                hinge.localScale = new Vector3(1f / ls.x, 1f / ls.y, 1f / ls.z);
                 var door = new GameObject("MiG29_fod_door").transform;
                 door.SetParent(hinge, false);
-                door.localRotation = Quaternion.LookRotation(dir.normalized, Vector3.up);
-                door.localPosition = dir * 0.5f - door.up * 0.008f;
-                door.gameObject.AddComponent<MeshFilter>().sharedMesh = fodMesh;
+                door.gameObject.AddComponent<MeshFilter>().sharedMesh = CreateOrReplace(FodDoorMesh(side), $"{ModDir}/meshes/MiG29_fod_door_{(side < 0 ? "L" : "R")}.asset");
                 door.gameObject.AddComponent<MeshRenderer>().sharedMaterial = mat;
             }
         }
@@ -693,6 +721,64 @@ namespace MiG29SMTTools
         // MiG frame, duct centre x 0.70 (blender ray scan of the duct: roof -0.27..-0.32, floor -0.83..-0.87 at z 3.4..4.1, lower lip z 4.15)
         static Vector3 FodHinge(float side) => new Vector3(side * 0.70f, -0.295f, 4.15f);
         static Vector3 FodOpenEnd(float side) => new Vector3(side * 0.70f, -0.31f, 3.50f);
+
+        [Serializable] class FodDump { public float[] hinge; public float[] rows; }
+
+        // The door in the hinge's frame, open pose: the closed outline (rows of y, z, x-left, x-right from tools/fod_door.py, left
+        // intake; mirrored for the right) turned back up by -FodClosedDeg. Front (toward the intake mouth when closed) light grey,
+        // back dark grey, 1 cm thick.
+        static Mesh FodDoorMesh(float side)
+        {
+            var json = File.ReadAllText(Path.Combine(SourceDir, "fod_door.json"));
+            // JsonUtility cannot read nested arrays: flatten "rows": [[y, z, xl, xr], ...]
+            json = System.Text.RegularExpressions.Regex.Replace(json, @"""rows"":\s*\[(.*)\]\s*}", m => "\"rows\": [" + m.Groups[1].Value.Replace("[", "").Replace("]", "") + "]}");
+            var d = JsonUtility.FromJson<FodDump>(json);
+            var rows = new List<(float y, float z, float xl, float xr)>();
+            for (int i = 0; i + 3 < d.rows.Length; i += 4) rows.Add((d.rows[i], d.rows[i + 1], d.rows[i + 2], d.rows[i + 3]));
+            // the bottom row meets the duct floor's rounded corner: keep the width of the row above it
+            for (int i = 1; i < rows.Count; i++)
+                if (rows[i].xr - rows[i].xl < 0.8f * (rows[i - 1].xr - rows[i - 1].xl)) rows[i] = (rows[i].y, rows[i].z, rows[i - 1].xl, rows[i - 1].xr);
+            var hingePos = new Vector3(d.hinge[0], d.hinge[1], d.hinge[2]);
+            var open = Quaternion.Euler(-MiG29InstrumentMath.FodClosedDeg, 0f, 0f);
+            Vector3 Local(float x, float y, float z)
+            {
+                var p = new Vector3(x, y, z) - hingePos;
+                if (side > 0) p.x = -p.x;
+                return open * p;
+            }
+            var verts = new List<Vector3>(); var norms = new List<Vector3>(); var uvs = new List<Vector2>(); var tris = new List<int>();
+            var front = new Vector2(0.375f, 0.875f); var back = new Vector2(0.625f, 0.875f);   // missile atlas: light grey, dark grey
+            // closed door plane: normal toward the intake mouth (+z, a little down); the back face sits 1 cm behind it
+            var nClosed = Vector3.Cross(new Vector3(0f, rows[rows.Count - 1].y - rows[0].y, rows[rows.Count - 1].z - rows[0].z), Vector3.right).normalized;
+            if (nClosed.z < 0f) nClosed = -nClosed;
+            var nOpen = open * nClosed;
+            var thick = open * (-nClosed * 0.01f);
+            void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 e, Vector3 n, Vector2 uv)
+            {
+                int i0 = verts.Count;
+                verts.AddRange(new[] { a, b, c, e }); for (int k = 0; k < 4; k++) { norms.Add(n); uvs.Add(uv); }
+                // Unity front face: clockwise as seen from the normal side
+                if (Vector3.Dot(Vector3.Cross(b - a, c - a), n) < 0f) tris.AddRange(new[] { i0, i0 + 1, i0 + 2, i0, i0 + 2, i0 + 3 });
+                else tris.AddRange(new[] { i0, i0 + 2, i0 + 1, i0, i0 + 3, i0 + 2 });
+            }
+            for (int i = 0; i + 1 < rows.Count; i++)
+            {
+                var r0 = rows[i]; var r1 = rows[i + 1];
+                Vector3 a = Local(r0.xl, r0.y, r0.z), b = Local(r0.xr, r0.y, r0.z), c = Local(r1.xr, r1.y, r1.z), e = Local(r1.xl, r1.y, r1.z);
+                Quad(a, b, c, e, nOpen, front);
+                Quad(a + thick, b + thick, c + thick, e + thick, -nOpen, back);
+                // side edges
+                Quad(a, e, e + thick, a + thick, (a - b).normalized, back);
+                Quad(b, c, c + thick, b + thick, (b - a).normalized, back);
+            }
+            var f0 = rows[0]; var fl = rows[rows.Count - 1];
+            Quad(Local(f0.xl, f0.y, f0.z), Local(f0.xr, f0.y, f0.z), Local(f0.xr, f0.y, f0.z) + thick, Local(f0.xl, f0.y, f0.z) + thick, open * Vector3.up, back);
+            Quad(Local(fl.xl, fl.y, fl.z), Local(fl.xr, fl.y, fl.z), Local(fl.xr, fl.y, fl.z) + thick, Local(fl.xl, fl.y, fl.z) + thick, open * Vector3.down, back);
+            var m = new Mesh { name = "MiG29_fod_door" };
+            m.SetVertices(verts); m.SetNormals(norms); m.SetUVs(0, uvs); m.SetTriangles(tris, 0);
+            m.RecalculateBounds(); m.RecalculateTangents();
+            return m;
+        }
 
         // Box mesh centred on the origin, every vertex mapped to one flat-colour cell of the missile atlas (0.625, 0.875 = dgrey).
         static Mesh AtlasBox(string name, Vector3 size, float u, float v)
@@ -754,32 +840,6 @@ namespace MiG29SMTTools
             return new Vector3(Mathf.Sign(k.x) * m, k.y, k.z);
         }
 
-        static Component AssignPart(Vector3 c, Dictionary<Component, Bounds> boxes, Transform root)
-        {
-            // MiG vertical fins sit where the KR-67 has nothing: give them to the tail parts
-            if (Mathf.Abs(c.x) > 1.2f && Mathf.Abs(c.x) < 2.4f && c.y > 0.45f && c.z < -2.5f)
-                return Find(root, c.x < 0 ? "tail_L" : "tail_R").GetComponent(TypeByName("UnitPart"));
-            var k = ToKR67(c);
-            Component best = null; float bestVol = float.MaxValue;
-            foreach (var kv in boxes)
-            {
-                var b = kv.Value; b.Expand(0.1f);
-                if (!b.Contains(k)) continue;
-                var vol = b.size.x * b.size.y * b.size.z;
-                if (vol < bestVol) { bestVol = vol; best = kv.Key; }
-            }
-            if (best != null) return best;
-            float bestD = float.MaxValue;
-            foreach (var kv in boxes)
-            {
-                var d = kv.Value.SqrDistance(k);
-                if (d < bestD) { bestD = d; best = kv.Key; }
-            }
-            return best;
-        }
-
-        class Bucket { public List<Vector3> v = new List<Vector3>(), n = new List<Vector3>(); public List<Vector2> uv = new List<Vector2>(); public List<int> t = new List<int>(); }
-
         static void SplitAirframe(Transform root, Transform visual, List<PartDump> pieces, Material mat, List<(Component part, Renderer renderer)> surfaces)
         {
             var upType = TypeByName("UnitPart");
@@ -794,50 +854,124 @@ namespace MiG29SMTTools
                 boxes[p] = WorldBounds(mc.sharedMesh.bounds, p.transform.localToWorldMatrix);
             }
 
-            var buckets = new Dictionary<Component, Bucket>();
-            foreach (var piece in pieces)
+            // the parts are their hitboxes (built below from the same colliders, x * HitboxWidthScale): each straddling skin triangle
+            // is cut where one hull gives way to the next (MiG29Cut), so a part breaks off along a clean edge and is what was hit
+            var parts = boxes.Keys.ToList();
+            foreach (var tail in new[] { "tail_L", "tail_R" })
+            {
+                var tp = Find(root, tail).GetComponent(upType);
+                if (!parts.Contains(tp)) parts.Add(tp);
+            }
+            var hulls = new MiG29Cut.Hulls { faces = new List<MiG29Cut.Plane>[parts.Count] };
+            int dropped = 0;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                var mc = parts[i].GetComponent<MeshCollider>();
+                if (mc == null || mc.sharedMesh == null) { hulls.faces[i] = new List<MiG29Cut.Plane>(); continue; }
+                var t = parts[i].transform;
+                var hv = mc.sharedMesh.vertices.Select(v => { var w = t.TransformPoint(v); w.x *= HitboxWidthScale; return w; }).ToArray();
+                // the convex hull's face planes, from the vertices alone (the collider meshes are not all closed or convex; PhysX
+                // hulls them the same way): every plane through three vertices with all the others on one side
+                hv = hv.Select(v => new Vector3(Mathf.Round(v.x * 1e3f), Mathf.Round(v.y * 1e3f), Mathf.Round(v.z * 1e3f)) / 1e3f).Distinct().ToArray();
+                var set = new HashSet<MiG29Cut.Plane>();
+                for (int a = 0; a < hv.Length; a++)
+                    for (int b = a + 1; b < hv.Length; b++)
+                        for (int c = b + 1; c < hv.Length; c++)
+                        {
+                            var nrm = Vector3.Cross(hv[b] - hv[a], hv[c] - hv[a]);
+                            if (nrm.sqrMagnitude < 1e-8f) continue;
+                            var pl = new MiG29Cut.Plane(nrm, Vector3.Dot(nrm, hv[a]));
+                            float lo = float.MaxValue, hi = float.MinValue;
+                            foreach (var v in hv) { var s = pl.Dist(v); lo = Mathf.Min(lo, s); hi = Mathf.Max(hi, s); }
+                            if (hi <= 0.005f) set.Add(pl);
+                            if (lo >= -0.005f) set.Add(new MiG29Cut.Plane(-pl.n, -pl.d));
+                        }
+                hulls.faces[i] = set.ToList();
+                if (set.Count < 4) { dropped++; Debug.LogWarning($"[MiG29] hull {parts[i].name}: {hv.Length} points, {set.Count} faces"); }
+            }
+            Debug.Log($"[MiG29] hulls: {parts.Count} parts, {hulls.faces.Sum(x => x.Count)} faces, {dropped} degenerate; points per hull {string.Join(",", parts.Select(p => p.GetComponent<MeshCollider>()?.sharedMesh?.vertexCount ?? 0))}");
+            // MiG vertical fins sit where the KR-67 has nothing: they go to the tail parts
+            int tailL = parts.FindIndex(p => p.name == "tail_L"), tailR = parts.FindIndex(p => p.name == "tail_R");
+            hulls.fixedPart = c => Mathf.Abs(c.x) > 1.2f && Mathf.Abs(c.x) < 2.4f && c.y > 0.45f && c.z < -2.5f ? (c.x < 0 ? tailL : tailR) : -1;
+            foreach (var x in new[] { -2.4f, -1.2f, 1.2f, 2.4f }) hulls.fixedFaces.Add(new MiG29Cut.Plane(0, x));
+            hulls.fixedFaces.Add(new MiG29Cut.Plane(1, 0.45f)); hulls.fixedFaces.Add(new MiG29Cut.Plane(2, -2.5f));
+            var world = pieces.Select(piece =>
             {
                 int n = piece.vertices.Length / 3;
-                var wv = new Vector3[n]; var wn = new Vector3[n];
+                var wv = new Vector3[n]; var wn = new Vector3[n]; var uv = new Vector2[n];
                 for (int i = 0; i < n; i++)
                 {
                     wv[i] = visual.TransformPoint(new Vector3(piece.vertices[i * 3], piece.vertices[i * 3 + 1], piece.vertices[i * 3 + 2]));
                     wn[i] = visual.TransformDirection(new Vector3(piece.normals[i * 3], piece.normals[i * 3 + 1], piece.normals[i * 3 + 2]));
+                    uv[i] = new Vector2(piece.uvs[i * 2], piece.uvs[i * 2 + 1]);
                 }
-                var remap = new Dictionary<(Component, int), int>();
-                for (int t = 0; t < piece.triangles.Length; t += 3)
-                {
-                    var c = (wv[piece.triangles[t]] + wv[piece.triangles[t + 1]] + wv[piece.triangles[t + 2]]) / 3f;
-                    var part = AssignPart(c, boxes, root);
-                    if (!buckets.TryGetValue(part, out var b)) buckets[part] = b = new Bucket();
-                    for (int k = 0; k < 3; k++)
-                    {
-                        int oi = piece.triangles[t + k];
-                        if (!remap.TryGetValue((part, oi), out var ni))
-                        {
-                            ni = b.v.Count;
-                            remap[(part, oi)] = ni;
-                            b.v.Add(part.transform.InverseTransformPoint(wv[oi]));
-                            b.n.Add(part.transform.InverseTransformDirection(wn[oi]));
-                            b.uv.Add(new Vector2(piece.uvs[oi * 2], piece.uvs[oi * 2 + 1]));
-                        }
-                        b.t.Add(ni);
-                    }
-                }
+                return (wv, wn, uv, piece.triangles);
+            }).ToList();
+            var buckets = MiG29Cut.Split(world, hulls);
+            // the stock jets' own interior materials (game assets, restored at runtime like the KR-67 glass; nothing is shipped)
+            var structMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Blueprinter/_donotship/Material/aircraft_structure_PLACEHOLDER.mat");
+            var honeyMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Blueprinter/_donotship/Material/honeycomb_PLACEHOLDER.mat");
+            var mechMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Blueprinter/_donotship/Material/jet_mechanical_PLACEHOLDER.mat");
+            int innerTris = 0;
+            Mesh PartMesh(string name, Transform tr, List<Vector3> v, List<Vector3> n, List<Vector2> uv, List<Color32> col, List<int> t)
+            {
+                var pm = new Mesh { name = name };
+                pm.indexFormat = v.Count > 65000 ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16;
+                pm.SetVertices(v.Select(x => tr.InverseTransformPoint(x)).ToList()); pm.SetNormals(n.Select(x => tr.InverseTransformDirection(x)).ToList());
+                pm.SetUVs(0, uv); if (col != null) pm.SetColors(col); pm.SetTriangles(t, 0);
+                pm.RecalculateBounds(); pm.RecalculateTangents();
+                return CreateOrReplace(pm, $"{ModDir}/meshes/{name}.asset");
             }
+            // RD-33 bodies forward of the nozzle roots, inside the nacelles
+            var axes = new[] { -1f, 1f }.Select(sd => { MiG29Nozzles.EngineAxis(sd, out var r0, out var fw); return (r0 + ModelOffset, fw); }).ToList();
+            foreach (var kv in MiG29Cut.Engines(axes, EngineLength, EngineRadius, hulls.Label))
+            {
+                var part = parts[kv.Key]; var (ev, en, euv, et) = kv.Value;
+                MiG29Cut.Dump("mech_" + part.name, ev, et);
+                AddMeshObject("MiG29_mech_" + part.name, part.transform, PartMesh("MiG29_mech_" + part.name, part.transform, ev, en, euv, null, et), mechMat);
+                innerTris += et.Count / 3;
+            }
+
+            // airframe thickness, for the inner hull's inset: a ray inward from the skin to its far side (the whole skin as one
+            // temporary collider on its own layer, back faces included)
+            var rayGo = new GameObject("MiG29_tmp_thickness") { layer = 31 };
+            var allV = new List<Vector3>(); var allT = new List<int>();
+            foreach (var bk in buckets.Values) { int o = allV.Count; allV.AddRange(bk.v); allT.AddRange(bk.t.Select(x => x + o)); }
+            var rayMesh = new Mesh { indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 }; rayMesh.SetVertices(allV); rayMesh.SetTriangles(allT, 0);
+            rayGo.AddComponent<MeshCollider>().sharedMesh = rayMesh;
+            Physics.SyncTransforms();
+            bool backfaces = Physics.queriesHitBackfaces; Physics.queriesHitBackfaces = true;
+            // No inner hull inside the cockpit (MiG frame: between the sills from the floor up through the canopy, the canopy's rear
+            // edge to the windscreen): the windscreen frame and sills fell to the front fuselage in the hull cut, and their hull, a few
+            // cm in from the skin, showed in the cockpit view as a streaky arch under the bow and slabs along the sills (user
+            // screenshot, SMT 0.2.0); the game hides only the cockpit part's skin there. The cockpit tub closes that space anyway.
+            bool InCockpit(Vector3 p) { var q = p - ModelOffset; return Mathf.Abs(q.x) < 0.46f && q.y > 0.30f && q.y < 1.45f && q.z > 5.62f && q.z < 7.95f; }
+            float Depth(Vector3 p, Vector3 dir) => Physics.Raycast(p + dir * 0.003f, dir, out var hit, 3f, 1 << 31, QueryTriggerInteraction.Ignore) ? hit.distance + 0.003f : -1f;   // -1: no far side
 
             foreach (var kv in buckets)
             {
-                var part = kv.Key; var b = kv.Value;
+                var part = parts[kv.Key]; var b = kv.Value; var tr = part.transform;
+                MiG29Cut.Dump("skin_" + part.name, b.v, b.t);
                 var m = new Mesh { name = "MiG29_part_" + part.name };
                 m.indexFormat = b.v.Count > 65000 ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16;
-                m.SetVertices(b.v); m.SetNormals(b.n); m.SetUVs(0, b.uv); m.SetTriangles(b.t, 0);
+                m.SetVertices(b.v.Select(v => tr.InverseTransformPoint(v)).ToList()); m.SetNormals(b.n.Select(v => tr.InverseTransformDirection(v)).ToList());
+                m.SetUVs(0, b.uv); m.SetTriangles(b.t, 0);
                 m.RecalculateBounds(); m.RecalculateTangents();
                 m = CreateOrReplace(m, $"{ModDir}/meshes/MiG29_part_{part.name}.asset");
-                var r = AddMeshObject("MiG29_skin_" + part.name, part.transform, m, mat);
-                AddDamageRenderer(part.transform, r);
+                var r = AddMeshObject("MiG29_skin_" + part.name, tr, m, mat);
+                AddDamageRenderer(tr, r);
+
+                // the inside behind the skin (stock structure; honeycomb in the radome, at the stock tints and texel densities); not
+                // a damage renderer: the damage shader would punch the airframe's burn mask through it too
+                bool radome = part.name == "nose";
+                var (iv, inr, iuv, icol, it) = MiG29Cut.Interior(b, radome ? 0.61f : 0.46f, radome ? new Color32(0x81, 0x56, 0x43, 255) : new Color32(0x57, 0x57, 0x57, 255), Depth, InCockpit);
+                MiG29Cut.Dump("inner_" + part.name, iv, it);
+                AddMeshObject("MiG29_inner_" + part.name, tr, PartMesh("MiG29_inner_" + part.name, tr, iv, inr, iuv, icol, it), radome ? honeyMat : structMat);
+                innerTris += it.Count / 3;
                 Debug.Log($"[MiG29] part {part.name}: {b.t.Count / 3} tris");
             }
+            Physics.queriesHitBackfaces = backfaces; UnityEngine.Object.DestroyImmediate(rayGo);
+            Debug.Log($"[MiG29] interior: {innerTris} triangles (inner hull, radome honeycomb, engines)");
 
             // Hitboxes: the KR-67's own part colliders (designed not to overlap each other, which matters because in complex
             // physics every part is its own rigidbody and only jointed neighbours ignore each other) scaled to the MiG:
@@ -857,6 +991,7 @@ namespace MiG29SMTTools
         }
 
         const float HitboxWidthScale = 0.8f;
+        const float EngineLength = 2.6f, EngineRadius = 0.42f;   // RD-33 body forward of the nozzle root, inside the nacelle
 
         static void SetHitbox(Component part, Mesh mesh)
         {
@@ -896,6 +1031,41 @@ namespace MiG29SMTTools
             }
             Each("UnitPart", so => so.FindProperty("mass").floatValue *= MassScale);
             Each("FuelTank", so => so.FindProperty("fuelCapacity").floatValue *= FuelScale);
+            // The aircraft you fly has one rigidbody per part, held together by FixedJoints (AeroPart.CreateJoints). At the stock 6
+            // solver iterations the joints give under load: in a high-g pull the wings visibly rose off the fuselage and the airframe
+            // looked to come apart (user video, v0.9.0). The parts form one PhysX island, which is solved with the highest count of
+            // any of its bodies, so this stiffens the whole airframe. Break forces are unchanged.
+            Each("UnitPart", so =>
+            {
+                var joints = so.FindProperty("joints");
+                if (joints == null) return;
+                for (int i = 0; i < joints.arraySize; i++) joints.GetArrayElementAtIndex(i).FindPropertyRelative("solverIterations").intValue = JointIterations;
+            });
+            StiffenNoseGear(root);
+        }
+
+        // The nose leg keeps the KR-67's spring (300 kN/m, 30 kN s/m), but on the MiG the nose wheel sits 3.6 m ahead of the mains
+        // with the CG 0.7 m ahead of them, so the leg carries ~20 % of the weight. The KR-67 spread that load over a longer
+        // wheelbase. On the MiG the nose sagged at rest, dived hard under braking and bobbed afterwards (user report, 0.9.2). The
+        // real MiG's nose strut barely moves, so the spring is stiffer and damped near critical for the pitch-on-gear mode
+        // (about 7 t at the nose).
+        const float NoseSpringRate = 480000f, NoseDampingRate = 75000f;
+
+        static void StiffenNoseGear(Transform root)
+        {
+            var wheel = Find(root, "wheel_F");
+            foreach (var lg in root.GetComponentsInChildren(TypeByName("LandingGear"), true))
+            {
+                var so = new SerializedObject(lg);
+                var hinge = so.FindProperty("gearHinge").objectReferenceValue as Transform;
+                if (hinge == null || !wheel.IsChildOf(hinge)) continue;
+                so.FindProperty("springRate").floatValue = NoseSpringRate;
+                so.FindProperty("dampingRate").floatValue = NoseDampingRate;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                Debug.Log($"[MiG29] nose gear {lg.name}: spring {NoseSpringRate}, damping {NoseDampingRate}");
+                return;
+            }
+            throw new Exception("[MiG29] no LandingGear drives wheel_F");
         }
 
         // ---------------- internal bays: the MiG has none ----------------
