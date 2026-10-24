@@ -87,7 +87,17 @@ namespace MiG29SMTInstruments
                 if (page.StartsWith("c_"))
                 {
                     var cd = CustomDraw(page, out var crt);
-                    if (cd == null) { MiG29InstrumentsPlugin.Log.LogWarning($"screen {kv.Key}: no custom page {page.Substring(2)} in mfd_pages.json"); continue; }
+                    if (cd == null)
+                    {
+                        // a missing page (e.g. mfd_pages.json not installed): the built-in page for that side of the panel, not a dark screen
+                        float sx = cockpitRoot.InverseTransformPoint(kv.Value.bounds.center).x;
+                        string fb = sx < -0.12f ? "pfd" : sx > 0.12f ? "eng" : "sms";
+                        var fp = pages[Array.FindIndex(pages, p => p.name == fb)];
+                        MiG29InstrumentsPlugin.Log.LogWarning($"screen {kv.Key}: no custom page {page.Substring(2)} in mfd_pages.json, showing {fb}");
+                        float fppm = density.TryGetValue(fb, out var fd) && fd > 0f ? fd : 2000f;
+                        sd.Add(kv.Key, kv.Value, baseMat, w => Mathf.Clamp(Mathf.RoundToInt(fppm * w), 64, 768), fp.rate, fp.draw);
+                        continue;
+                    }
                     float cppm = density.TryGetValue("pfd", out var pd) && pd > 0f ? pd : 2000f;
                     sd.Add(kv.Key, kv.Value, baseMat, w => Mathf.Clamp(Mathf.RoundToInt(cppm * w), 64, 768), crt, cd);
                     continue;
