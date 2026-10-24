@@ -19,27 +19,91 @@ namespace MiG29SMTInstruments
 
         InstrumentDriver driver;
         readonly List<Screen> screens = new List<Screen>();
+        HashSet<string> offOverride;   // a cockpit setup's hidden screens (null: the build's "off" markers)
+        Material dark;
 
-        public static bool Setup(InstrumentDriver driver, Transform cockpitRoot)
+        /// <summary>The screens again for a cockpit setup (null = the default cockpit): its custom screens, pages and hidden screens.</summary>
+        public static void Rebuild(InstrumentDriver driver, Transform cockpitRoot, object setup)
+        {
+            var old = driver.GetComponent<ScreenDriver>();
+            if (old != null) DestroyImmediate(old);
+            MfdFile file = null; HashSet<string> off = null;
+            if (setup != null)
+            {
+                file = Pages.FromJson(MiG29Json.Obj(setup, "mfd"));
+                off = new HashSet<string>();
+                foreach (var h in MiG29Json.Arr(setup, "hide")) if (h is string s) off.Add(s);
+            }
+            Setup(driver, cockpitRoot, file, off, setup != null);
+        }
+
+        static Material darkMat;
+
+        public static bool Setup(InstrumentDriver driver, Transform cockpitRoot, MfdFile fileOverride = null, HashSet<string> offOverride = null, bool fromSetup = false)
         {
             var found = new Dictionary<string, Renderer>();
             Material baseMat = null;
             foreach (var r in cockpitRoot.GetComponentsInChildren<Renderer>(true))
             {
-                if (r.name.StartsWith("MiG29_ck_")) found[r.name.Substring("MiG29_ck_".Length)] = r;
+                if (r.name.StartsWith("MiG29_ck_") && (r.enabled || !r.name.StartsWith("MiG29_ck_cs_"))) found[r.name.Substring("MiG29_ck_".Length)] = r;   // a hidden build screen is not drawn
                 if (r.name == "tacScreen") baseMat = r.sharedMaterial;
             }
             var sd = driver.gameObject.AddComponent<ScreenDriver>();
             sd.driver = driver;
+            sd.offOverride = offOverride;
+            if (darkMat == null && baseMat != null) { darkMat = new Material(baseMat) { name = "MiG29SMT_screen_off" }; darkMat.SetTexture("_BaseMap", Texture2D.blackTexture); darkMat.SetTexture("_EmissionMap", Texture2D.blackTexture); darkMat.SetColor("_EmissionColor", Color.black); }
+            sd.dark = darkMat;
             // texture width and redraws per second (the flight displays fast, the slow-changing pages less often)
-            foreach (var (name, width, rate, draw) in new (string, int, float, Action<Canvas, FlightState>)[]
-                     { ("pfd", 320, 20f, Pages.Pfd), ("eng", 320, 8f, Pages.Eng), ("sms", 400, 4f, Pages.Sms), ("stby", 120, 12f, Pages.Stby), ("ufc", 250, 2f, Pages.Ufc) })
-                if (found.TryGetValue(name, out var r)) sd.Add(name, r, baseMat, width, rate, draw);
+            var pages = new (string name, int width, float rate, Action<Canvas, FlightState> draw)[]
+                { ("pfd", 320, 20f, Pages.Pfd), ("eng", 320, 8f, Pages.Eng), ("sms", 400, 4f, Pages.Sms), ("stby", 120, 12f, Pages.Stby), ("ufc", 250, 2f, Pages.Ufc) };
+            // custom pages from the cockpit editor's page designer (mfd_pages.json next to this DLL): "assign" puts one on a
+            // built-in screen; custom screens name one as page "c_<id>"
+            var file = fromSetup ? fileOverride : Pages.LoadCustom();
+            var custom = new Dictionary<string, MfdPage>();
+            if (file?.pages != null) foreach (var cp in file.pages) if (!string.IsNullOrEmpty(cp?.id)) custom["c_" + cp.id] = cp;
+            var assigned = new Dictionary<string, string>();
+            if (file?.assign != null) foreach (var a in file.assign) if (a != null && !string.IsNullOrEmpty(a.screen) && !string.IsNullOrEmpty(a.page)) assigned[a.screen] = "c_" + a.page;
+            Action<Canvas, FlightState> CustomDraw(string key, out float crate)
+            {
+                custom.TryGetValue(key, out var cp);
+                crate = cp != null && cp.rate > 0f ? cp.rate : 10f;
+                return cp != null ? Pages.Custom(cp) : null;
+            }
+            var density = new Dictionary<string, float>();   // page -> texture pixels per metre on its built-in screen
+            foreach (var (name, width, rate, draw) in pages)
+            {
+                if (!found.TryGetValue(name, out var r)) continue;
+                var dr = draw; float rt = rate;
+                if (assigned.TryGetValue(name, out var key)) { var cd = CustomDraw(key, out var crt); if (cd != null) { dr = cd; rt = crt; } }
+                density[name] = sd.Add(name, r, baseMat, _ => width, rt, dr);
+            }
+            // custom screens from the cockpit editor (MiG29_ck_cs_<id>__<page>): any page on a screen of any size, at the same pixel
+            // density as the page's built-in screen so its text comes out the same size
+            foreach (var kv in found)
+            {
+                int k = kv.Key.IndexOf("__", StringComparison.Ordinal);
+                if (!kv.Key.StartsWith("cs_") || k < 0) continue;
+                string page = kv.Key.Substring(k + 2);
+                if (page.StartsWith("c_"))
+                {
+                    var cd = CustomDraw(page, out var crt);
+                    if (cd == null) { MiG29InstrumentsPlugin.Log.LogWarning($"screen {kv.Key}: no custom page {page.Substring(2)} in mfd_pages.json"); continue; }
+                    float cppm = density.TryGetValue("pfd", out var pd) && pd > 0f ? pd : 2000f;
+                    sd.Add(kv.Key, kv.Value, baseMat, w => Mathf.Clamp(Mathf.RoundToInt(cppm * w), 64, 768), crt, cd);
+                    continue;
+                }
+                int pi = Array.FindIndex(pages, p => p.name == page);
+                if (pi < 0) continue;
+                var pg = pages[pi];
+                float ppm = density.TryGetValue(page, out var d) && d > 0f ? d : 2000f;
+                sd.Add(kv.Key, kv.Value, baseMat, w => Mathf.Clamp(Mathf.RoundToInt(ppm * w), 64, 768), pg.rate, pg.draw);
+            }
             MiG29InstrumentsPlugin.Log.LogInfo($"MiG-29SMT screens: {string.Join(", ", sd.screens.ConvertAll(s => $"{s.name} {s.c.W}x{s.c.H}"))}");
             return sd.screens.Count > 0;
         }
 
-        void Add(string name, Renderer screen, Material baseMat, int width, float rate, Action<Canvas, FlightState> draw)
+        // returns the texture's pixels per metre across the screen (0 when it is switched off or cannot be drawn)
+        float Add(string name, Renderer screen, Material baseMat, Func<float, int> widthFor, float rate, Action<Canvas, FlightState> draw)
         {
             // the quad's UVs point at a black atlas cell (a dark screen without the plugin): re-map them 0..1 across the screen
             var mf = screen.GetComponent<MeshFilter>();
@@ -66,13 +130,24 @@ namespace MiG29SMTInstruments
             var uv = new Vector2[v.Length];
             for (int i = 0; i < v.Length; i++)
                 uv[i] = new Vector2(Mathf.InverseLerp(minU, maxU, Vector3.Dot(v[i], right)), Mathf.InverseLerp(minV, maxV, Vector3.Dot(v[i], up)));
+            float physW = Mathf.Max(maxU - minU, 1e-4f);
+            int width = widthFor(physW);
+            // switched off in the cockpit editor (a child named "off"): left as the dark screen it is without the plugin
+            if (offOverride != null ? offOverride.Contains(name) : screen.transform.Find("off") != null)
+            {
+                if (dark != null && offOverride != null) screen.sharedMaterial = dark;   // drawn on before this setup: make it a dark screen again
+                return width / physW;
+            }
             mesh.uv = uv;
             mf.sharedMesh = mesh;
-            int height = Mathf.Max(16, Mathf.RoundToInt(width * (maxV - minV) / Mathf.Max(maxU - minU, 1e-4f)));
+            int height = Mathf.Max(16, Mathf.RoundToInt(width * (maxV - minV) / physW));
 
             // mipmapped, trilinear and anisotropic: a screen covers only ~150 px of the player's view, and without mips the text shimmered
             // and broke up (user screenshot, SMT 0.2.0)
-            var tex = new Texture2D(width, height, TextureFormat.RGBA32, true) { name = "MiG29SMT_" + name, filterMode = FilterMode.Trilinear, anisoLevel = 8, wrapMode = TextureWrapMode.Clamp };
+            // Full resolution at every texture-quality setting: the game's Texture Quality drops the top mip levels of every mipmapped
+            // texture (half / quarter / eighth size), which left these small screens as unreadable smudges on Low (user screenshot,
+            // SMT 0.2.0). The stock tactical display is a render texture and never drops; these now behave the same.
+            var tex = new Texture2D(width, height, TextureFormat.RGBA32, true) { name = "MiG29SMT_" + name, filterMode = FilterMode.Trilinear, anisoLevel = 8, wrapMode = TextureWrapMode.Clamp, ignoreMipmapLimit = true };
             Material m;
             if (baseMat != null)
             {
@@ -85,14 +160,15 @@ namespace MiG29SMTInstruments
             else
             {
                 var sh = Shader.Find("Universal Render Pipeline/Unlit");
-                if (sh == null) return;
+                if (sh == null) return 0f;
                 m = new Material(sh) { name = "MiG29SMT_" + name };
                 m.SetTexture("_BaseMap", tex);
             }
             screen.sharedMaterial = m;
             var canvas = new Canvas(width, height);
-            canvas.SetShape(Array.ConvertAll(uv, p => new Vector2(p.x * width, p.y * height)));   // shaped screens (the wing displays): pages lay out inside
+            canvas.SetShapeTris(Array.ConvertAll(uv, p => new Vector2(p.x * width, p.y * height)), mesh.triangles);   // shaped screens: pages lay out inside
             screens.Add(new Screen { name = name, c = canvas, tex = tex, draw = draw, rate = rate, due = screens.Count * 0.01f });
+            return width / physW;
         }
 
         void LateUpdate()
@@ -111,7 +187,7 @@ namespace MiG29SMTInstruments
     // Sized for the tall displays (~300 x 680 px on the wing screens): in the cockpit view a screen covers only ~150 px of the
     // player's monitor, so values are 3x (21 px) and labels 2x (14 px) text, lines 2-3 px, one item per line (user, SMT 0.2.0:
     // "the text is hard to read", the engine labels ran into the fuel line).
-    static class Pages
+    static partial class Pages
     {
         static readonly Color32 Sky = new Color32(30, 104, 190, 255), Ground = new Color32(122, 82, 44, 255), White = new Color32(235, 235, 235, 255),
             Yellow = new Color32(250, 215, 40, 255), Green = new Color32(70, 230, 90, 255), Black = new Color32(6, 8, 10, 255), Grey = new Color32(70, 74, 80, 255),
@@ -499,6 +575,27 @@ namespace MiG29SMTInstruments
                     lo = Mathf.Min(lo, x); hi = Mathf.Max(hi, x);
                 }
                 if (lo > hi) { lo = 0; hi = W; }                       // past the top or bottom vertex: keep the row whole
+                L[y] = Mathf.Clamp(Mathf.CeilToInt(lo), 0, W); R[y] = Mathf.Clamp(Mathf.FloorToInt(hi), 0, W);
+            }
+        }
+
+        /// <summary>The screen's shape from its mesh's triangles in canvas pixels: per row, the outermost span the triangles cover.
+        /// Any outline works, dented ones from the cockpit editor included (the convex hull of the corners filled their dents).</summary>
+        public void SetShapeTris(Vector2[] pts, int[] tris)
+        {
+            if (tris == null || tris.Length < 3) { SetShape(pts); return; }
+            for (int y = 0; y < H; y++)
+            {
+                float yc = y + 0.5f, lo = float.MaxValue, hi = float.MinValue;
+                for (int t = 0; t + 2 < tris.Length; t += 3)
+                    for (int e = 0; e < 3; e++)
+                    {
+                        var a = pts[tris[t + e]]; var b = pts[tris[t + (e + 1) % 3]];
+                        if ((a.y - yc) * (b.y - yc) > 0f || Mathf.Approximately(a.y, b.y)) continue;
+                        float x = a.x + (yc - a.y) / (b.y - a.y) * (b.x - a.x);
+                        lo = Mathf.Min(lo, x); hi = Mathf.Max(hi, x);
+                    }
+                if (lo > hi) { lo = 0; hi = W; }                       // past the top or bottom: keep the row whole
                 L[y] = Mathf.Clamp(Mathf.CeilToInt(lo), 0, W); R[y] = Mathf.Clamp(Mathf.FloorToInt(hi), 0, W);
             }
         }

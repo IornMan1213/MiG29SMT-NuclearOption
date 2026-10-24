@@ -6,7 +6,9 @@ param(
     [string]$Unity = $(if ($env:UNITY_EDITOR) { $env:UNITY_EDITOR } elseif ($env:OS -eq 'Windows_NT') { "C:\Program Files\Unity\Hub\Editor\2022.3.62f2\Editor\Unity.exe" } else { "$HOME/Unity/Hub/Editor/2022.3.62f2/Editor/Unity" }),
     [string]$Blender = $(if ($env:BLENDER) { $env:BLENDER } elseif ($env:OS -eq 'Windows_NT') { "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" } else { "blender" }),
     [switch]$Release,          # back the build up to builds/ and the GitHub `builds` branch (tools/backup_build.py)
-    [string]$Note = ""         # notes column for that version
+    [string]$Note = "",        # notes column for that version
+    [switch]$Quick             # skip the generated sources (models, liveries, cockpit mesh) when they are already there: for
+                               # cockpit editor changes, which only the Unity pass uses
 )
 $ErrorActionPreference = "Stop"
 $py = if ($env:OS -eq 'Windows_NT') { "python" } else { "python3" }
@@ -26,8 +28,19 @@ New-Item -ItemType Directory -Force $dst | Out-Null
 Copy-Item (Join-Path (Split-Path $PSScriptRoot) "unity/MiG29Tools/*.cs") $dst -Force
 
 # 0b. Generated sources: missile/launcher models, the flight-model export and the livery textures.
-$tools = $PSScriptRoot
 $src = "$Project/MiG29SMTSource"
+# cockpit editor elements (decals, custom screens): <repo>/cockpit/build, written by the Cockpit Editor
+Remove-Item "$src/custom" -Recurse -Force -ErrorAction SilentlyContinue
+$customBuild = Join-Path (Split-Path $PSScriptRoot) "cockpit/build"
+if (Test-Path "$customBuild/custom_mesh.json") { New-Item -ItemType Directory -Force "$src/custom" | Out-Null; Copy-Item "$customBuild/*" "$src/custom" -Force }
+# -Quick skips Blender only when the cockpit mesh there already has the editor's groups (a build from a branch without them
+# writes one without, and the layout could not be applied)
+$hasGroups = $false
+if ($Quick -and (Test-Path "$src/cockpit_mesh.json")) {
+    $hasGroups = (& $py -c "import json,os;p=r'$src';m=json.load(open(os.path.join(p,'cockpit_mesh.json')));b=os.path.join(p,'cockpit_mesh_base.json');m=json.load(open(b)) if m.get('layout_applied') and os.path.exists(b) else m;print(1 if m.get('groups') else 0)") -eq "1"
+}
+if (-not ($Quick -and $hasGroups)) {
+$tools = $PSScriptRoot
 Push-Location (Split-Path $tools)
 & $py "$tools/fix_winding.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "fix_winding failed" }   # before anything copies body triangles
 & $py "$tools/clean_insignia.py" "$src"; if ($LASTEXITCODE -ne 0) { throw "clean_insignia failed" }
@@ -60,6 +73,14 @@ $ckOld = if (Test-Path "$src/cockpit_mesh.json") { (Get-Item "$src/cockpit_mesh.
 & $Blender -b --python "$(Split-Path $tools)/blender/cockpit_build.py" -- "$src" | Select-String '\[cockpit\]|Error|Traceback' | ForEach-Object { $_.Line }
 if (-not (Test-Path "$src/cockpit_mesh.json") -or (Get-Item "$src/cockpit_mesh.json").LastWriteTime -le $ckOld) { throw "cockpit_build failed" }
 Pop-Location
+}
+
+# cockpit editor layout (moved / turned / scaled / hidden instruments): the builder sets the instrument groups' transforms from
+# <source>/custom/layout.json (they are their own objects, which the plugins also move at runtime for .cpit setups). A cockpit
+# mesh an older build baked a layout into is put back to Blender's output first.
+if ((Test-Path "$src/cockpit_mesh_base.json") -and (Select-String -Path "$src/cockpit_mesh.json" -Pattern '"layout_applied": true' -SimpleMatch -Quiet)) { Copy-Item "$src/cockpit_mesh_base.json" "$src/cockpit_mesh.json" -Force }
+$layoutFile = Join-Path (Split-Path $PSScriptRoot) "cockpit/layout.json"
+if (Test-Path $layoutFile) { New-Item -ItemType Directory -Force "$src/custom" | Out-Null; Copy-Item $layoutFile "$src/custom/layout.json" -Force }
 
 # 1. Compile pass. Blueprinter keeps the game's Assembly-CSharp in ScriptAssemblies read-only, which makes
 #    batchmode compilation fail; clear it so the project compiles.
@@ -97,7 +118,12 @@ Get-ChildItem $env:MIG29_OUT -Filter MiG29SMTInstruments.dll | ForEach-Object { 
 $zip = Join-Path $env:MIG29_OUT "MiG-29SMT-Mod_$ver.zip"
 Remove-Item "$env:MIG29_OUT/MiG-29SMT-Mod_*.zip" -ErrorAction SilentlyContinue
 Copy-Item (Join-Path $repo "mod/CREDITS.txt") $env:MIG29_OUT -Force
-Compress-Archive -Path "$env:MIG29_OUT/MiG-29SMT_$ver.nobp", "$env:MIG29_OUT/MiG29SMTInstruments.dll", "$env:MIG29_OUT/CREDITS.txt" -DestinationPath $zip -Force
+# custom MFD pages from the cockpit editor's page designer: next to the plugin DLL (it reads them from its own folder)
+$files = @("$env:MIG29_OUT/MiG-29SMT_$ver.nobp", "$env:MIG29_OUT/MiG29SMTInstruments.dll", "$env:MIG29_OUT/CREDITS.txt")
+Remove-Item "$env:MIG29_OUT/mfd_pages.json" -ErrorAction SilentlyContinue
+$pagesFile = Join-Path $repo "cockpit/mfd_pages.json"
+if (Test-Path $pagesFile) { Copy-Item $pagesFile $env:MIG29_OUT -Force; $files += "$env:MIG29_OUT/mfd_pages.json" }
+Compress-Archive -Path $files -DestinationPath $zip -Force
 "OUTPUT $zip $((Get-Item $zip).Length)"
 if ($Release -and $code -eq 0) {
     Get-ChildItem $env:MIG29_OUT -Filter *.nobp | ForEach-Object { & $py (Join-Path $PSScriptRoot "backup_build.py") $_.FullName --note $Note }

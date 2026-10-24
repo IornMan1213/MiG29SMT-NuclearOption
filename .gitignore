@@ -15,6 +15,7 @@
 !/assets/
 !/.github/
 !/nomnom/
+!/cockpit/
 __pycache__/
 *.pyc
 # never commit the source model, game files or built mods
@@ -28,3 +29,4 @@ unity/MiG29Instruments/obj/
 
 # hand-painted livery work files (blender/livery_edit.py)
 blender/livery/
+/cockpit/setups/
