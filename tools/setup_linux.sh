@@ -75,7 +75,8 @@ fi
 
 say "Nuclear Option"
 GAME=""
-for g in "$HOME/.local/share/Steam/steamapps/common/Nuclear Option" "$HOME/.steam/steam/steamapps/common/Nuclear Option" \
+# ~/.steam/steam points at the Steam install in use (a leftover ~/.local/share/Steam can hold a stale copy)
+for g in "$HOME/.steam/steam/steamapps/common/Nuclear Option" "$HOME/.local/share/Steam/steamapps/common/Nuclear Option" \
          "$HOME/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common/Nuclear Option"; do
     [ -d "$g" ] && GAME="$g" && break
 done
