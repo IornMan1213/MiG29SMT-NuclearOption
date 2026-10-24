@@ -116,7 +116,8 @@ cat <<EOF
 Still to do by hand:
   1. Open Unity Hub, sign in, and install editor 2022.3.62f2 (Installs > Install Editor > Archive, or the unityhub:// link
      on https://unity.com/releases/editor/archive). The build expects it at ~/Unity/Hub/Editor/2022.3.62f2/Editor/Unity
-     (set UNITY_EDITOR if it is elsewhere).
+     (set UNITY_EDITOR if it is elsewhere). Add the "Windows Build Support (Mono)" module too (Installs > 2022.3.62f2 > Add
+     modules): the game is a Windows build, also under Proton, so the mod is packaged for Windows.
   2. Copy the Blueprinter Editor project over from Windows (leave out its Library folder; Unity rebuilds it), or set it up
      again per Blueprinter's instructions. Then run this script again with its path, or set BLUEPRINTER_PROJECT.
   3. In Steam, Nuclear Option > Properties > Launch Options:  WINEDLLOVERRIDES="winhttp=n,b" %command%

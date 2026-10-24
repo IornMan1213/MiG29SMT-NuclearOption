@@ -103,6 +103,12 @@ $log = Join-Path $Project "MiG29SMTOut_build.log"
 $code = Invoke-Unity @('-executeMethod', 'MiG29SMTTools.MiG29Builder.BuildAll') $log
 Select-String -Path $log -Pattern '\[MiG29\]|\[Blueprinter\]|error CS|Exception' | Where-Object { $_.Line -notmatch 'Licensing' } | ForEach-Object { $_.Line }
 Get-ChildItem $env:MIG29_OUT -Filter *.nobp | ForEach-Object { "OUTPUT $($_.FullName) $($_.Length)" }
+if (-not (Get-ChildItem $env:MIG29_OUT -Filter *.nobp)) {
+    if (Select-String -Path $log -SimpleMatch "Windows build support is not installed" -Quiet) {
+        throw "No .nobp: Unity's Windows Build Support (Mono) module is missing (the game is a Windows build, also under Proton). Unity Hub > Installs > 2022.3.62f2 > Add modules, or: unityhub --headless install-modules --version 2022.3.62f2 --module windows-mono"
+    }
+    throw "No .nobp came out of the build pass, see $log"
+}
 
 # 4. The instruments plugin (BepInEx, ships next to the .nobp): built against the installed game.
 $repo = Split-Path $PSScriptRoot

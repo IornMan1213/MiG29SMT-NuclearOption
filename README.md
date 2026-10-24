@@ -78,7 +78,7 @@ Steps:
 
 **On Linux:** run `tools/setup_linux.sh [<project>]` once (apt, dnf or pacman). It installs Python with numpy and Pillow, the
 .NET 8 SDK, PowerShell, Blender and Unity Hub, adds `~/.local/bin`, `GameDir` and `BLUEPRINTER_PROJECT` to `~/.profile`, and
-lists the remaining manual steps (Unity 2022.3.62f2 through the Hub, the Steam launch option
+lists the remaining manual steps (Unity 2022.3.62f2 through the Hub with its Windows Build Support (Mono) module, the Steam launch option
 `WINEDLLOVERRIDES="winhttp=n,b" %command%` so BepInEx loads under Proton). Then build with
 `pwsh tools/build_mig29.ps1 -Project <project>`. Without the Windows fonts, the texture scripts fall back to Liberation Sans
 and DejaVu Sans Condensed. To get byte-identical textures, copy `arial.ttf`, `arialbd.ttf` and `bahnschrift.ttf` into
