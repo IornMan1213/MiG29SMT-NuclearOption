@@ -181,9 +181,17 @@ namespace MiG29SMTInstruments
             return width / physW;
         }
 
+        // Only drawn from the cockpit: in the outside and map cameras nobody can read them (they used to redraw ~46 times a second
+        // anyway). Back in the cockpit the most overdue screen goes first, so they are all fresh within a fraction of a second.
+        static bool InCockpitView()
+        {
+            var cams = SceneSingleton<CameraStateManager>.i;
+            return cams == null || cams.currentState == null || cams.currentState == cams.cockpitState;
+        }
+
         void LateUpdate()
         {
-            if (driver == null || screens.Count == 0) return;
+            if (driver == null || screens.Count == 0 || !InCockpitView()) return;
             Screen s = null;                                               // at most one screen per frame: the most overdue
             foreach (var x in screens) if (Time.unscaledTime >= x.due && (s == null || x.due < s.due)) s = x;
             if (s == null) return;
