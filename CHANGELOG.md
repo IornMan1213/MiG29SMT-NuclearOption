@@ -20,6 +20,11 @@
 - **Bullet holes cost less.** No extra checks on bullet impacts when there is no SMT in the mission, at most 12 new holes per frame,
   and the materials made for a jet's holes are freed when it goes (they stayed in memory until the next mission).
 - Small per-frame memory allocations in the cockpit instruments removed (less garbage-collection stutter).
+- **R-27R "hold the lock" cue.** While an R-27R you fired is guiding, a line under the crosshair says to hold the lock, with the
+  time to impact; if its target drops out of your target list it says the lock is lost. Configuration Manager, MiG-29SMT
+  Instruments > Weapons > R-27R lock cue. (The R-77 is fire-and-forget and needs none.)
+- **Install check.** If two copies of the mod are installed, or the plugin and the .nobp come from different releases, the game
+  says so the first time you fly the SMT, and the log lists the files.
 - **One download.** Releases now come as a single zip (`MiG-29SMT-Mod_x.y.z.zip`, what NOMM installs) holding the `.nobp`, the
   plugin and the credits.
 - **The SMT's own readme, credits, weapon-modder guide and project page.** They were still the MiG-29 mod's, with its install
