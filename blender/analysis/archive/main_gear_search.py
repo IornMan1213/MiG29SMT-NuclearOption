@@ -4,7 +4,7 @@ MiG29SMTTools.MiG29GearDump 'down' pose (MiG29SMTOut/gear_down.json); the posing
 python main_gear_search.py <MiG29SMTSource> <MiG29SMTOut>"""
 import json, os, sys, time
 import numpy as np
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tools"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tools"))
 import bay_grid
 
 SRC, OUT = sys.argv[1], sys.argv[2]
