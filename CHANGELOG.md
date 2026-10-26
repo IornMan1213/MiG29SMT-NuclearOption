@@ -25,6 +25,10 @@
   Instruments > Weapons > R-27R lock cue. (The R-77 is fire-and-forget and needs none.)
 - **Install check.** If two copies of the mod are installed, or the plugin and the .nobp come from different releases, the game
   says so the first time you fly the SMT, and the log lists the files.
+- **One download.** Releases now come as a single zip (`MiG-29SMT-Mod_x.y.z.zip`, what NOMM installs) holding the `.nobp`, the
+  plugin and the credits.
+- **The SMT's own readme, credits, weapon-modder guide and project page.** They were still the MiG-29 mod's, with its install
+  folder, file names and aircraft key.
 
 ## SMT 0.2.0
 - **All-glass cockpit.** Players asked for a modern dash, so the SMT now has three large colour displays: one shaped to fill each
