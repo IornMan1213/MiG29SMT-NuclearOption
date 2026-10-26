@@ -1,20 +1,20 @@
-MiG-29 Fulcrum for Nuclear Option - credits and licences
-https://github.com/IornMan1213/MiG29-NuclearOption
+MiG-29SMT for Nuclear Option - credits and licences
+https://github.com/IornMan1213/MiG29SMT-NuclearOption
 
-Install: put "MiG-29 Fulcrum_<version>.nobp" and "MiG29Instruments.dll" in BepInEx/plugins/MiG-29_Fulcrum/.
-Requires BepInEx 5 and Blueprinter 2.0.1 or newer.
+Install: put "MiG-29SMT_<version>.nobp" and "MiG29SMTInstruments.dll" in BepInEx/plugins/MiG-29SMT/.
+Requires BepInEx 5 and Blueprinter 2.0.1 or newer. Installs beside the MiG-29 Fulcrum mod.
 
 3D model
   "MiG-29 - Fighter Jet - Free" by bohmerang
   https://sketchfab.com/3d-models/mig-29-fighter-jet-free-0a21787096244220b246ec8747e7b09c
   Licensed CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).
-  Converted and modified for this mod (split into parts, retextured liveries, game integration).
+  Converted and modified for this mod (split into parts, the SMT's dorsal spine, retextured liveries, game integration).
   The .nobp file is distributed under the same licence: free, non-commercial, credit required.
 
-Cockpit, instrument faces, missiles and launchers
+Cockpit, screens, missiles, bombs and launchers
   Modelled and drawn from scratch for this mod.
 
-MiG29Instruments.dll
+MiG29SMTInstruments.dll
   Open source (MIT): unity/MiG29Instruments in the repository above.
 
 The mod is built with Blueprinter (https://github.com/nikkorap/NOBlueprinter-Releases), which references the game's own
