@@ -20,6 +20,10 @@
 - **Bullet holes cost less.** No extra checks on bullet impacts when there is no SMT in the mission, at most 12 new holes per frame,
   and the materials made for a jet's holes are freed when it goes (they stayed in memory until the next mission).
 - Small per-frame memory allocations in the cockpit instruments removed (less garbage-collection stutter).
+- **One download.** Releases now come as a single zip (`MiG-29SMT-Mod_x.y.z.zip`, what NOMM installs) holding the `.nobp`, the
+  plugin and the credits.
+- **The SMT's own readme, credits, weapon-modder guide and project page.** They were still the MiG-29 mod's, with its install
+  folder, file names and aircraft key.
 
 ## SMT 0.2.0
 - **All-glass cockpit.** Players asked for a modern dash, so the SMT now has three large colour displays: one shaped to fill each

@@ -1,129 +1,116 @@
-# MiG-29 Fulcrum for Nuclear Option (v0.9.0)
+# MiG-29SMT for Nuclear Option (v0.2.0)
 
-A flyable MiG-29 (9.12) with its own flight model, R-27R / R-27T / R-73 / R-60M missiles, the GSh-30-1 cannon, droppable fuel
-tanks, flares and chaff, airbrakes, a brake chute, intake FOD doors, working canopy and gear doors, working rear-view mirrors,
-its own damage display, nine liveries and loading screens.
+The modernised MiG-29SMT (9.19): an all-glass cockpit, the R-77 active radar missile, laser-guided Kh-29L and KAB-500L, the
+Kh-31P anti-radiation missile and more internal fuel, on top of everything the MiG-29 Fulcrum mod's 9.12 has (flight model,
+R-27R / R-27T / R-73 / R-60M, GSh-30-1, drop tanks, flares and chaff, airbrakes, brake chute, intake FOD doors, canopy and gear
+doors, stock-style damage, rear-view mirrors). It is a separate jet from the MiG-29 Fulcrum mod and installs beside it.
 
 ## Install
 1. Install [BepInEx 5](https://github.com/BepInEx/BepInEx) into the Nuclear Option folder.
 2. Install [Blueprinter](https://github.com/nikkorap/NOBlueprinter-Releases) (2.0.1 or newer) into `BepInEx/plugins`.
-3. Put `MiG-29 Fulcrum_0.9.0.nobp` and `MiG29Instruments.dll` (both in `MiG-29-Fulcrum_0.9.0.zip`) in
-   `BepInEx/plugins/MiG-29_Fulcrum/`, or install the mod with a NOMNOM mod manager such as NOMM.
-   Remove older `MiG-29 Fulcrum_*.nobp` files. The DLL makes the cockpit instruments work, gives the drop tanks their fuel and
-   works the brake chute, intake doors, nozzles and gear path; without it the MiG still flies, with the gauges parked, the drop
-   tanks empty, no brake chute and the intake doors always open.
+3. Unzip `MiG-29SMT-Mod_0.2.0.zip` into `BepInEx/plugins/MiG-29SMT/` (it holds `MiG-29SMT_0.2.0.nobp` and
+   `MiG29SMTInstruments.dll`), or install the mod with a NOMNOM mod manager such as NOMM (listed as MiG-29SMT).
+   Remove older `MiG-29SMT_*.nobp` files. The DLL draws the cockpit screens, gives the drop tanks their fuel and works the brake
+   chute, intake doors, nozzles and gear path; without it the SMT still flies, with dark screens, empty drop tanks, no brake
+   chute and the intake doors always open.
 4. Optional: [NO Mirrors](https://github.com/IornMan1213/NuclearOption-Mirrors) makes the three rear-view mirrors reflect.
 
-The MiG-29 appears in medium hangars, shelters and revetments on land bases, in the Hyperion carrier's hangars, and in the
-Encyclopedia.
+The SMT appears in medium hangars, shelters and revetments on land bases, in the Hyperion carrier's hangars, and in the
+Encyclopedia. It is rank 3 and costs $90 million.
 Multiplayer: everyone needs the same mod set (Blueprinter checks this).
 
 ## Features
-- **Flight model** tuned offline against published MiG-29 data with a re-implementation of the game's aerodynamics:
-  ~1,530 km/h at sea level, Mach 2.24 at 13 km, ~210 km/h stall, ~28 deg/s instantaneous and ~19-20 deg/s sustained turn,
-  9 g limit. RD-33 engines (49 kN dry / ~85 kN wet, no thrust vectoring), 3.7 t internal fuel, 11.5 t empty.
-  Flat all-moving stabilators (pitch + differential roll), rudders, ailerons and flaps all move physically.
+- **Flight model** from the MiG-29 Fulcrum mod, tuned offline against published MiG-29 data: ~1,530 km/h at sea level, Mach 2.24
+  at 13 km, ~28 deg/s instantaneous and ~19-20 deg/s sustained turn, 9 g limit, RD-33 engines (52 kN dry / ~90 kN wet in game).
+  The SMT's dorsal spine holds an extra tank: **4,460 kg of internal fuel** (the 9.12 carries 3,690 kg). Radar size 0.15 clean
+  (a little below the 9.12's 0.2, for the SMT's radar-absorbent treatment); stores add to it.
+- **Cobra button**: **Ctrl+C** turns Stability Assist (the pitch, g and angle-of-attack limiters) off for a Cobra or another
+  post-stall move. They come back on by themselves once the nose is down again or the jet is slower than 140 km/h, after 4
+  seconds at most; press the key again to end it early. A short tone marks both. Key, time and tone are in Configuration
+  Manager (MiG-29SMT Instruments > Flight), including a joystick button (`JoystickButton5` for any controller,
+  `Joystick1Button5` for the first one). The plugin's keys do nothing while you type in chat.
 - **Weapons**
-  - R-27R (AA-10 Alamo-A): semi-active radar, two-stage motor, ~50 km. Keep your radar locked on the target until impact.
+  - R-77 (RVV-AE, AA-12 Adder): active radar, fire-and-forget once its own radar has the target, ~60 km. Lattice tail fins, on
+    AKU-170 launchers.
+  - R-27R (AA-10 Alamo-A): semi-active radar, ~50 km. Keep your radar locked on the target until impact.
   - R-27T (AA-10 Alamo-B): infrared, fire-and-forget, ~30 km. The seeker must lock before launch.
   - R-73 (AA-11 Archer): all-aspect infrared, thrust vectoring, 45 deg off-boresight.
   - R-60M (AA-8 Aphid): light, agile infrared missile, ~8 km.
+  - Kh-29L (AS-14 Kedge): heavy laser-guided missile with a 320 kg warhead, ~12 km, for hardened and large targets. Lock the
+    target (the SMT lases it, or a friendly designator does) and fire: it rides the laser spot.
+  - KAB-500L: 500 kg laser-guided bomb, ~15 km, homing on the laser spot like the Kh-29L.
+  - Kh-31P (AS-17 Krypton): ramjet anti-radiation missile, over Mach 3, ~100 km, for SAM and ship radars.
   - GSh-30-1: 30 mm cannon in the left wing root, 150 rounds at ~1,650 rpm. Fire short bursts.
-  - Three pylons per wing, on launchers modelled after the real APU-73, APU-60 and AKU-470, with every missile pointing along
-    the fuselage: inner (R-27R / R-27T / R-73 / R-60M / PTB-1150 tank, plus base-game missiles, bombs, racks, rocket and gun
-    pods, jammers and the GPO-N), middle (R-73 / R-60M and the lighter base-game stores, single stores only), outer (R-73 /
-    R-60M, short-range AAMs, AGM-48, a rocket pod, ECM, smoke and flare pods); and a centreline station under the belly for the
-    PTB-1500 tank, bombs, nuclear bombs, the gun pod and jamming pods.
-  - Weapon modders: see `WEAPON_MODS.md` in the source repository to make your weapons selectable on the MiG.
-  - Default loadout: gun, 2x R-27R, 4x R-73. Preset loadouts (also used by AI MiGs): air superiority, long-range CAP
-    (PTB-1500 / R-27R / R-73), dogfight (R-27T / R-73 / R-60M), strike (FAB-500 / rockets / R-73), ferry (three tanks / R-73).
-- **Drop tanks**: PTB-1500 centreline tank (1,500 L, ~1,180 kg of fuel) and PTB-1150 wing tanks (1,150 L, ~905 kg each).
-  Their fuel is used first: the internal tanks stay full until the drop tanks run dry, and the aircraft's weight follows
-  the fuel. Drop them by selecting them and firing (one per press), or all at once with **Ctrl+J** (blocked with the gear
-  down). The **ПТБ** caution light comes on when the tanks you carry are empty. AI MiGs drop theirs when empty.
-- **Countermeasures** from the MiG-29's own BVP-30-26M dispensers on top of the tail booms, firing upward: 30 IR flares and
-  30 radar chaff cartridges (60 in all, as on the real jet), plus the Radar ECM jammer. Cycle countermeasures to choose.
-  Chaff decoys radar-guided missiles (active and semi-active). It works best when the missile sees you side-on (beam it) and
-  is close, so pop it as you turn across the missile's path.
-- **Airbrakes**: the upper and lower speed-brake panels on the tail between the engines open with the throttle at idle (the
-  HUD throttle's bottom detent), as on the game's other fighters.
-- **Brake chute**: after touchdown, with the throttle at idle above ~110 km/h, the cross-shaped chute streams from its housing at
-  the tip of the tail and slows the landing roll; it is dropped below ~30 km/h, or if you open the throttle to go around.
-- **Intake FOD doors**: on the ground with the engines running, below 200 km/h, the doors in the intake ducts close to keep debris
-  out (the ПЗУ light is on); they open on the take-off roll.
-- **Airframe**: canopy opens from its rear hinge on the ground and ejects with the seat; nose and main gear doors open with
-  the gear, and the main legs fold into the wing roots along the real path; the RD-33 nozzles open and close with power; parts
-  break off and show scorch damage; hitboxes are the KR-67 part colliders scaled to the MiG.
-- **Cockpit** modelled from scratch: turquoise MiG-29 instrument panel with Russian-marked gauges, HUD, side consoles with real
-  3D toggles and knobs, circuit-breaker panels, twin throttles, centre stick, a K-36DM seat with harness, the windscreen bow with
-  three rear-view mirrors (working, with the [NO Mirrors](https://github.com/IornMan1213/NuclearOption-Mirrors) plugin; Ctrl+M folds them), and the equipment bay behind the seat. The tactical display is built into the panel as the radar screen.
-- **Every instrument works**: 20 needles, a rolling attitude ball, a turning compass card, a 24-light caution panel, the SPO-15
-  radar warning receiver and gear lights, all driven by the aircraft's real state (see below).
-- **Cockpit damage display** and map icon drawn from the MiG itself.
-- **Liveries**: Two-Tone Grey, Desert Tan, Digital Grey, Display Blue, 29+20 Special, Tricolour Digital 741, OVT Splinter 917, White 44 and LII Gromov 84 (both factions can pick any).
-- Four loading screens.
+  - Stations: inner pylons (R-77, R-27R, R-27T, R-73, R-60M, Kh-29L, Kh-31P, KAB-500L, PTB-1150 tank and the heavier base-game
+    stores), middle pylons (R-77, R-73, R-60M, Kh-31P and the lighter base-game stores, single stores only), outer pylons (R-73,
+    R-60M and small base-game stores), and a centreline station for the PTB-1500 tank, bombs, nuclear bombs, the gun pod and
+    jamming pods.
+  - Default loadout: gun, 4x R-77, 2x R-73. Preset loadouts (also used by AI SMTs): air superiority (R-77 / R-73), long-range CAP
+    (PTB-1500 / R-77 / R-73), mixed (R-27R / R-77 / R-73), dogfight (R-27T / R-73 / R-60M), precision strike (Kh-29L / KAB-500L /
+    R-73), SEAD (Kh-31P / R-77 / R-73), strike (FAB-500 / rockets / R-73) and ferry (three tanks / R-73).
+  - Weapon modders: see `WEAPON_MODS.md` in the source repository to make your weapons selectable on the SMT.
+- **Drop tanks**: PTB-1500 centreline tank (~1,180 kg of fuel) and PTB-1150 wing tanks (~905 kg each). Their fuel is used first,
+  and the aircraft's weight follows the fuel. Drop them by selecting them and firing, or all at once with **Ctrl+J** (blocked with
+  the gear down). AI SMTs drop theirs when empty.
+- **Countermeasures** from the BVP-30-26M dispensers on the tail booms: 30 IR flares and 30 radar chaff cartridges, plus the
+  Radar ECM jammer. Cycle countermeasures to choose. Chaff works best when the missile sees you side-on and is close.
+- **Airbrakes** open with the throttle at idle; the **brake chute** streams after touchdown with the throttle at idle above
+  ~110 km/h and is dropped below ~30 km/h or when you open the throttle; the **intake FOD doors** close on the ground below
+  200 km/h with the engines running.
+- **Damage like the stock jets**: soot, dents and scorched patches that spread, bullet holes where you are hit, and parts that
+  break off cleanly with structure inside.
+- **Liveries**: VKS Grey 26 and Dark Grey 52 (the SMT's own), plus the 9.12's Two-Tone Grey, Desert Tan, Digital Grey, Display
+  Blue, 29+20 Special, Tricolour Digital 741, OVT Splinter 917, White 44 and LII Gromov 84 (both factions can pick any).
 
-## Cockpit instruments
-Every dial and light works (with `MiG29Instruments.dll` installed) and reads the aircraft's real state:
+## Cockpit
+An all-glass panel with three large colour displays, each in a bezel. They are drawn by `MiG29SMTInstruments.dll`, only while
+you look from the cockpit.
 
-| Instrument | Where | What it shows |
-|---|---|---|
-| Airspeed / Mach (КМ/Ч, M) | centre, top left | indicated airspeed, 0-1,600 km/h (white); Mach number on the inner yellow scale |
-| Attitude indicator (ball) | centre, top | pitch and bank on a real rolling ball; the orange symbol is your aircraft |
-| AoA / G (α, n) | centre, top right | angle of attack (yellow, red above 25 deg) and load factor in g (white) |
-| Altimeter (ВД-30) | centre, middle left | barometric altitude: long hand hundreds of metres, short hand thousands |
-| HSI compass | centre, bottom | heading on a turning compass card |
-| Vertical speed (М/С) | centre, middle right | climb / descent rate, up to 300 m/s |
-| Radar altimeter (РВ) | centre, bottom left | height above the ground, 0-1,500 m |
-| Clock (АЧС-1) | centre, bottom right | mission time of day |
-| RWR (SPO-15) | left panel, top | radar warning: sector lamps show where a radar is painting you from, the bar shows its strength, the letter its type (П fighter, З long-range SAM, Н short-range SAM, О ship); sectors flash for an incoming missile |
-| Gear lights (ШАССИ) | left panel | green = down and locked, red = moving |
-| Cabin altitude, oxygen | left panel, bottom | cabin pressure altitude; oxygen pressure, falling slowly in flight |
-| Tachometers (ОБ/МИН %) | right panel | left (white) and right (yellow) engine RPM, ~70 % at idle, 100 % at full power |
-| Exhaust temperature (t°C) | right panel | left / right engine EGT; rises with power, +60 deg C in afterburner, pegs in a fire |
-| Fuel (ТОПЛИВО) | right panel, bottom | fuel remaining, kg |
-| Hydraulics (ГИДРО) | right panel, bottom | hydraulic pressure from the engine pumps; bleeds down with both engines out |
-| Radar screen | right panel, top | the game's tactical display |
+| Display | What it shows |
+|---|---|
+| Left: flight display | attitude with pitch ladder and bank scale, speed and altitude tapes, heading tape, Mach, g, angle of attack, vertical speed, radar altitude, gear and missile warnings |
+| Centre: tactical display and stores | the game's tactical display across the top; below it every weapon station with rounds left (the selected one highlighted), countermeasures, and the current target with its range |
+| Right: radar warning and systems | threats by bearing and type, inbound missiles and lock; your own signature (engine heat LOW / MED / HIGH, radar cross-section against clean, radar on or off); RPM and EGT for both engines, throttle, internal and drop-tank fuel, hydraulics, oxygen and the caution messages |
 
-Caution panel (right, bottom): ПОЖАР Л/П engine fire, ОПАСН ВЫС low altitude with gear up and descending, ВЫХОД α angle of attack
-over 24 deg, ПЕРЕГРУЗ over-g, РАКЕТА missile inbound, ОСТАТОК fuel below 25 %, РЕЗЕРВ fuel below 10 %, ГЕН Л/П generator off (engine
-below 40 %), ГИДРО low hydraulics, ЗАХВАТ radar lock on you (a SAM, ship or enemy fighter targeting you), НАСОС fuel pump (an engine off), МАСЛО / ВИБРАЦ engine damage,
-ФОНАРЬ canopy open, ШАССИ gear moving or still up when low and slow, СКОРОСТЬ overspeed, ПТБ drop tanks carried but empty,
-ЩИТКИ flaps down, ТОРМОЗ brakes on, ПЗУ intake guards closed (on the ground), ФОРСАЖ afterburner, ПРОВЕРЬ master caution.
-The rudder pedals move with your rudder input and the gear lever with the gear. At night the panel and consoles are lit
-(brightness: `BepInEx/config/iornman.mig29.instruments.cfg`, `Night panel lighting`, 0 = off; the same file has the
-drop-tank `Jettison key` and `Drop empty tanks automatically`).
+Between the screens are the gear lights and lever, a small standby flight display and the master caution. The up-front control
+panel under the HUD shows the clock and the selected weapon, and its 16 keys light up with flight events: canopy, brakes, flaps,
+gear, weapon armed, gun, radar lock, missile inbound, hydraulics, engine trouble, afterburner, intake doors, low fuel, empty drop
+tanks, low flares or chaff, and low altitude.
+
+**Cockpit setups:** layouts made in the cockpit editor (`.cpit` files) go in the `Cockpits` folder next to the DLL. Pick one in
+Configuration Manager (MiG-29SMT Instruments > Cockpit > Cockpit layout) or cycle them with the "Next cockpit layout key". A file
+that cannot be used falls back to the default cockpit, and the log says why.
+
+At night the panel and consoles are lit (brightness: `BepInEx/config/iornman.mig29smt.instruments.cfg`, `Night panel lighting`,
+0 = off; the same file has the drop-tank `Jettison key`, `Drop empty tanks automatically`, the `Hide flight HUD` option and the
+mirror settings). **Ctrl+M** folds the mirrors.
 
 ## Troubleshooting
-- **The MiG-29 isn't in the aircraft list.** It spawns from medium hangars, shelters and revetments on land bases, and from the
-  Hyperion carrier's hangars.
-  Check that `BepInEx/LogOutput.log` has the line `Loaded mig29 x.y.z`, and that only one `MiG-29 Fulcrum_*.nobp` is installed.
-- **Can't join a multiplayer server.** Every player needs the same mod set and the same MiG-29 version; Blueprinter compares
-  them when you join.
-- **R-27R misses.** It's semi-active: keep the target locked on your radar until impact. For fire-and-forget at medium range,
-  use the R-27T (infrared; lock its seeker before launch).
-- **The gun runs dry fast.** The GSh-30-1 has 150 rounds, about five and a half seconds of fire. Short bursts.
-- **Drop tanks don't feed fuel / Ctrl+J does nothing / no brake chute.** These come from `MiG29Instruments.dll`; check it is
-  installed (below). The chute needs the throttle at idle after touchdown, and is used once per landing.
-  Tanks can't be released with the gear down.
-- **Gauges don't move.** `MiG29Instruments.dll` must be in `BepInEx/plugins` (next to the .nobp is fine);
-  `BepInEx/LogOutput.log` then shows `MiG-29 instruments on MiG29`.
-- **Something else.** [Open an issue](https://github.com/IornMan1213/MiG29-NuclearOption/issues/new/choose) with your mod version
-  and the `Exception` lines from `%USERPROFILE%\AppData\LocalLow\Shockfront\NuclearOption\Player.log`.
+- **The SMT isn't in the aircraft list.** It spawns from medium hangars, shelters and revetments on land bases, and from the
+  Hyperion carrier's hangars. Check that `BepInEx/LogOutput.log` has the line `Loaded mig29smt x.y.z`, and that only one
+  `MiG-29SMT_*.nobp` is installed.
+- **Can't join a multiplayer server.** Every player needs the same mod set and the same SMT version; Blueprinter compares them
+  when you join.
+- **The screens are dark, the drop tanks give no fuel, no brake chute.** These come from `MiG29SMTInstruments.dll`: it must be in
+  `BepInEx/plugins` (next to the .nobp is fine). `BepInEx/LogOutput.log` then shows a line starting `MiG-29 instruments on`.
+- **Kh-29L or KAB-500L miss.** They home on a laser spot: lock the target so the SMT lases it, and keep it locked until impact.
+- **R-27R misses.** It's semi-active: keep the target locked on your radar until impact. The R-77 is fire-and-forget.
+- **Something else.** [Open an issue](https://github.com/IornMan1213/MiG29SMT-NuclearOption/issues/new/choose) with your mod
+  version and the `Exception` lines from `%USERPROFILE%\AppData\LocalLow\Shockfront\NuclearOption\Player.log`.
 
 ## Known limitations
-- Flight model was tuned and verified offline; report handling issues with your controls and speed/altitude.
-- Nuclear Option has no supersonic drag rise, so drag is tuned to hit the real top speeds; as a result subsonic climb
-  (~210 m/s at sea level) and acceleration are somewhat below the real MiG's.
+- The flight model was tuned and verified offline; report handling issues with your controls and speed/altitude.
+- Nuclear Option has no supersonic drag rise, so drag is tuned to hit the real top speeds; as a result subsonic climb and
+  acceleration are somewhat below the real jet's.
 
 ## Links
-- Project page: https://iornman1213.github.io/MiG29-NuclearOption/
-- Source, releases and issues: https://github.com/IornMan1213/MiG29-NuclearOption
+- Source, releases and issues: https://github.com/IornMan1213/MiG29SMT-NuclearOption
+- The MiG-29 Fulcrum (9.12) mod: https://github.com/IornMan1213/MiG29-NuclearOption
 
 ## Credits
 - MiG-29 3D model: "MiG-29 - Fighter Jet - Free" by **bohmerang** (https://sketchfab.com/3d-models/mig-29-fighter-jet-free-0a21787096244220b246ec8747e7b09c),
-  licensed CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/). Converted and modified for this mod; this mod file is
-  distributed under the same licence: free, non-commercial, credit required.
-- Missile, launcher and drop-tank models, flight model, tooling: made for this mod.
+  licensed CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/). Converted and modified for this mod (including the
+  SMT's dorsal spine); this mod file is distributed under the same licence: free, non-commercial, credit required.
+- Cockpit, missile, bomb, launcher and drop-tank models, flight model, tooling: made for this mod.
 - Built on the KR-67 Ifrit's systems from Nuclear Option (Shockfront), loaded with Blueprinter by nikkorap.
 - Built with AI assistance (Claude).
