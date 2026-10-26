@@ -56,11 +56,40 @@ class Part:
         self.uv = self.bm.loops.layers.uv.new("UVMap")
 
     def face(self, pts, uvs):
-        vs = [self.bm.verts.new(p) for p in pts]
-        f = self.bm.faces.new(vs)
+        # cockpit editor groups: while a group is open (G), the tub's faces go to the group's own part (exported after the tub's,
+        # with its vertex range recorded) and any other part touched is noted as the group's
+        target = self
+        if CUR_GROUP[0]:
+            if self.name == "tub":
+                target = GROUP_PARTS.setdefault(CUR_GROUP[0], Part("g_" + CUR_GROUP[0]))
+            elif not self.name.startswith("g_"):
+                GROUP_OWNER.setdefault(self.name, set()).add(CUR_GROUP[0])
+        elif not self.name.startswith("g_") and self.name != "tub":
+            GROUP_OWNER.setdefault(self.name, set()).add("")
+        vs = [target.bm.verts.new(p) for p in pts]
+        f = target.bm.faces.new(vs)
         for l, uv in zip(f.loops, uvs):
-            l[self.uv].uv = uv
+            l[target.uv].uv = uv
         return f
+
+
+# Movable groups for the cockpit editor (Documents\CockpitEditor): each instrument, display, plate or switch panel is opened with
+# G(id, label, kind, frame) before it is built and closed by the next G (or G(None)). Its tub faces are exported as a vertex range
+# of the tub (cockpit_mesh.json "groups"), so the editor can move, turn, scale or hide it and tools/cockpit_layout.py can apply
+# that before the Unity build. frame: (centre, normal toward the pilot, right, up) in the Unity frame, else worked out from the faces.
+CUR_GROUP = [None]
+GROUP_PARTS = {}          # group id -> Part with its tub faces
+GROUP_OWNER = {}          # part name -> set of groups that drew into it ("" = outside any group)
+GROUP_META = {}           # group id -> label, kind, frame
+
+
+def G(gid, label=None, kind="instrument", frame=None):
+    CUR_GROUP[0] = gid
+    if gid:
+        m = GROUP_META.setdefault(gid, {"label": label or gid, "kind": kind, "frame": None})
+        if frame is not None:
+            c, n, r, u = frame
+            m["frame"] = [list(map(float, c)), list(map(float, n)), list(map(float, r)), list(map(float, u))]
 
 
 PARTS = {n: Part(n) for n in ("tub", "glass", "seat", "stick", "throttle", "screen", "lamps")}
@@ -470,15 +499,18 @@ for side in (-1, 1):
     else:
         segs = [(6.17, 6.42, names[1]), (6.44, 6.68, names[2]), (6.70, 6.94, names[0])]
     for za, zb, nm in segs:
+        G(f"con_{nm}", f"{'Left' if side < 0 else 'Right'} console panel {nm[3:].upper()}", "switch panel")
         ya, yb = top_y(za) + 0.003, top_y(zb) + 0.003
         if side < 0:
             quad_uv("tub", [(-x1, ya, za), (-x0, ya, za), (-x0, yb, zb), (-x1, yb, zb)], rect_uv(nm))
         else:
             quad_uv("tub", [(x0, ya, za), (x1, ya, za), (x1, yb, zb), (x0, yb, zb)], rect_uv(nm))
+    G(None)
     # (the plates' toggles and knobs are 3D: quad_uv -> switches_3d)
 
 # equipment boxes on the side walls above the consoles (decal faces toward the pilot's side)
 for side, cell, z0, z1 in ((-1, "sp_lc3", 6.18, 6.40), (1, "sp_aft", 6.20, 6.42), (1, "sp_rc3", 6.46, 6.66)):
+    G(f"box_{'l' if side < 0 else 'r'}_{cell}", f"{'Left' if side < 0 else 'Right'} wall box ({cell[3:].upper()})", "switch panel")
     y0, y1 = CON_TOP + 0.02, CON_TOP + 0.095
     xw = min(wall_x(y, z) for y in (y0, y1) for z in (z0, z1)) - 0.002
     xf = xw - 0.035
@@ -490,6 +522,7 @@ for side, cell, z0, z1 in ((-1, "sp_lc3", 6.18, 6.40), (1, "sp_aft", 6.20, 6.42)
 
 # circuit-breaker panels (АЗС) on both walls, ahead of the equipment boxes
 for side in (-1, 1):
+    G(f"cb_{'l' if side < 0 else 'r'}", f"{'Left' if side < 0 else 'Right'} circuit breakers", "switch panel")
     z0, z1, y0, y1 = 6.72, 7.00, CON_TOP + 0.035, CON_TOP + 0.105
     xw = min(wall_x(y, z) for y in (y0, y1) for z in (z0, z1)) - 0.002
     xf = xw - 0.012
@@ -498,6 +531,7 @@ for side in (-1, 1):
     q = [(X, a0, b1), (X, a0, b0), (X, a1, b0), (X, a1, b1)] if side > 0 else [(X, a0, b0), (X, a0, b1), (X, a1, b1), (X, a1, b0)]
     quad_uv("tub", q, rect_uv("sp_cb"))
 
+G(None)
 # throttle quadrant (left console): slotted cover, gate plate
 TQ_Z0, TQ_Z1 = 6.42, 6.72
 xq0, xq1 = -(wall_x(0.68, 6.57) - 0.012), -(CON_IN + 0.012)
@@ -799,8 +833,11 @@ def corner_display(s, pid):
         slab(c + n * 0.016, n, right, up, kw, kh, 0.004, "dgrey")
 
 
+G("mfd_left", "Left display (flight)", "display", panel_frame(-0.30, 0.15, 0.0))
 corner_display(-1, "pfd")
+G("mfd_right", "Right display (RWR, engines)", "display", panel_frame(0.30, 0.15, 0.0))
 corner_display(1, "eng")
+G("mfd_centre", "Centre display (tactical, stores)", "display", panel_frame(0.0, CTR_V, 0.0))
 # centre: the game's tactical display, whole and at its own 2.1:1 shape (its render texture's main area, u 0..0.75, v 0.25..1)
 # across the top of the screen (cropping it to fill a screen cut off the display's centre and range rings; user, SMT 0.1.0), and
 # the stores page the plugin draws below it ("sms")
@@ -822,6 +859,7 @@ def small_screen(pid, u, v, w, h, depth=0.012):
 
 
 # up-front control panel: a keypad either side of its data window (the plugin draws on "ufc")
+G("ufcp", "Up-front control panel", "display", panel_frame(0.0, 0.283, 0.0))
 c, n, right, up = panel_frame(0.0, 0.283, 0.0)
 slab(c, n, right, up, 0.25, 0.066, 0.014, "dgrey")
 # keys: printed caption on each face, and a lit copy just in front that the plugin switches on with its flight event (lamp_ufc_<id>,
@@ -845,12 +883,14 @@ small_screen("ufc", 0.0, 0.283, 0.080, 0.032, depth=0.0142)
 GAP_U = (CTR_BW / 2 + 0.204) / 2
 # left gap: gear position lights above the gear lever
 GEAR_U, GEAR_V, GW, GH = -GAP_U, 0.205, 0.062, 0.031
+G("gear_lights", "Gear lights", "instrument", panel_frame(GEAR_U, GEAR_V, 0.0))
 plate(GEAR_U, GEAR_V, GW, GH, "gear_plate")
 for gid, x, y, sz in ATLAS["layout"]["gear"]:
     gu, gv = GEAR_U + (x - 0.5) * GW, GEAR_V + (0.5 - y) * GH
     lamp(f"gear_{gid}_g", gu, gv, sz * GW * 0.95, sz * GW * 0.95, rect_uv("lamp_lit_green", 6), 0.0040)
     lamp(f"gear_{gid}_r", gu, gv, sz * GW * 0.95, sz * GW * 0.95, rect_uv("lamp_lit_red", 6), 0.0042)
 GL_U, GL_V = -GAP_U, 0.105
+G("gear_lever", "Gear lever", "lever", panel_frame(GL_U, GL_V, 0.0))
 c, n, right, up = panel_frame(GL_U, GL_V, 0.0)
 flat("tub", c + n * 0.003, right, up, 0.03, 0.06, "black")                       # lever plate
 flat("tub", c + n * 0.0035, right, up, 0.006, 0.045, "rubber")                    # slot
@@ -862,12 +902,15 @@ cylinder(pid, tuple(piv + up * 0.034 + n * 0.014), tuple(right), 0.0095, 0.004, 
 INS[pid] = (piv, n, up)
 # right gap: master caution above the standby flight display (the SMT's backup to the MFDs: attitude, speed, altitude)
 CAU_U, CAU_V = GAP_U, 0.215
+G("master_caution", "Master caution", "instrument", panel_frame(CAU_U, CAU_V, 0.0))
 c, n, right, up = panel_frame(CAU_U, CAU_V, 0.0)
 slab(c, n, right, up, 0.050, 0.022, 0.010, "black")
 cl = ATLAS["layout"]["caution"]
 k = cl["ids"].index("master"); i, j = k % cl["cols"], k // cl["cols"]
 lamp("cau_master", CAU_U, CAU_V, 0.040, 0.014, sub_uv("caution_lit", i / cl["cols"], j / cl["rows"], (i + 1) / cl["cols"], (j + 1) / cl["rows"]), 0.0110)
+G("stby", "Standby display", "display", panel_frame(GAP_U, 0.115, 0.0))
 small_screen("stby", GAP_U, 0.115, 0.060, 0.060)
+G(None)
 
 # panel trim: black edge strips around the centre section, screws, setting knobs
 def strip(u0, v0, u1, v1, w=0.008, off=0.004):
@@ -880,10 +923,13 @@ for s in (-1, 1):   # the wings' lower edge, trimmed like the centre section's
     strip(s * 0.2, V_LOW + 0.003, s * (WING_OUT[s][0] - 0.004), V_LOW + 0.003)
 for (u, v) in ((-0.19, V_LOW + 0.009), (0.19, V_LOW + 0.009), (-0.185, PH - 0.035), (0.185, PH - 0.035), (-0.27, 0.33), (0.27, 0.33)):
     c = Vector(pp(u, v, 0.002, 1)); cylinder("tub", tuple(c), tuple(panel_normal(u)), 0.004, 0.004, "metal", 8)
-for (u, v) in ((-0.165, 0.283), (0.165, 0.283), (GAP_U, 0.035)):   # setting knobs either side of the control panel, light dimmer
+for k, (u, v) in enumerate(((-0.165, 0.283), (0.165, 0.283), (GAP_U, 0.035))):   # setting knobs either side of the control panel, light dimmer
+    G(f"knob_{k + 1}", ("Left setting knob", "Right setting knob", "Light dimmer")[k], "knob", panel_frame(u, v, 0.0))
     n = panel_normal(u); c = Vector(pp(u, v, 0.0, 1))
     cylinder("tub", tuple(c + n * 0.009), tuple(n), 0.0075, 0.018, "black", 12)
     cylinder("tub", tuple(c + n * 0.019), tuple(n), 0.0055, 0.004, "dgrey", 12)
+
+G(None)
 
 # ------------------------------------------------------------------------------------------------ glareshield + HUD
 GS_Y = PT + 0.012
@@ -1310,12 +1356,59 @@ def export_part(part, sign, material, pivot=None):
     return out, me
 
 
+def group_frame(o):
+    """Centre (middle of the bounding box), area-weighted normal, right (world x, else z, on its plane) and up of a group's faces."""
+    v = [Vector(o["vertices"][i:i + 3]) for i in range(0, len(o["vertices"]), 3)]
+    lo = Vector((min(p.x for p in v), min(p.y for p in v), min(p.z for p in v))); hi = Vector((max(p.x for p in v), max(p.y for p in v), max(p.z for p in v)))
+    acc = Vector((0, 0, 0)); t = o["triangles"]
+    for i in range(0, len(t), 3):
+        A, B, C = v[t[i]], v[t[i + 1]], v[t[i + 2]]
+        nn = Vector(o["normals"][t[i] * 3:t[i] * 3 + 3])
+        cr = (B - A).cross(C - A)
+        acc += cr if cr.dot(nn) > 0 else -cr
+    n = acc.normalized() if acc.length > 1e-9 else Vector((0, 0, -1))
+    r = Vector((1, 0, 0)) - n * n.x
+    if r.length < 0.3:
+        r = Vector((0, 0, 1)) - n * n.z
+    r.normalize(); u = n.cross(r).normalized()
+    if u.y < 0 or (abs(u.y) < 1e-3 and u.z > 0):
+        u = -u; r = -r
+    return [list((lo + hi) / 2), list(n), list(r), list(u)]
+
+
+def merge_groups(tub_out):
+    """Append each group's faces to the tub; record its vertex and triangle ranges, frame, size and the parts it owns."""
+    groups = []
+    for gid, gp in GROUP_PARTS.items():
+        o, _ = export_part(gp, sign, "cockpit", None)
+        base = len(tub_out["vertices"]) // 3
+        t0 = len(tub_out["triangles"])
+        tub_out["vertices"] += o["vertices"]; tub_out["normals"] += o["normals"]; tub_out["uvs"] += o["uvs"]
+        tub_out["triangles"] += [i + base for i in o["triangles"]]
+        meta = GROUP_META[gid]
+        frame = meta["frame"] or group_frame(o)
+        c, r, u = Vector(frame[0]), Vector(frame[2]), Vector(frame[3])
+        vs = [Vector(o["vertices"][i:i + 3]) for i in range(0, len(o["vertices"]), 3)]
+        own = sorted(p for p, gs in GROUP_OWNER.items() if gs == {gid})
+        w = max(abs((p - c).dot(r)) for p in vs) * 2 if vs else 0.0
+        h = max(abs((p - c).dot(u)) for p in vs) * 2 if vs else 0.0
+        groups.append({"id": gid, "label": meta["label"], "kind": meta["kind"], "verts": [base, base + len(o["vertices"]) // 3],
+                       "tris": [t0, len(tub_out["triangles"])], "frame": frame, "size": [round(w, 4), round(h, 4)], "parts": own})
+    print(f"[cockpit] editor groups: {len(groups)} ({', '.join(g['id'] for g in groups)})")
+    shared = sorted(p for p, gs in GROUP_OWNER.items() if len(gs - {''}) and len(gs) > 1)
+    if shared:
+        print(f"[cockpit] editor groups: parts drawn by more than one group (not movable with them): {shared}")
+    return groups
+
+
 sign = winding_sign()
 parts_out, meshes = [], {}
 for name, mat, pivot in (("tub", "cockpit", None), ("glass", "glass", None), ("seat", "cockpit", SEAT_O), ("stick", "cockpit", STICK_O),
                          ("throttle", "cockpit", THR_O), ("screen", "screen", None), ("lamps", "lamps", None), ("pfd", "cockpit", None),
                          ("eng", "cockpit", None), ("sms", "cockpit", None), ("stby", "cockpit", None), ("ufc", "cockpit", None)):
     o, me = export_part(PARTS[name], sign, mat, pivot)
+    if name == "tub":
+        GROUPS_OUT = merge_groups(o)
     parts_out.append(o); meshes[name] = me
 for name in sorted(k for k in PARTS if k.startswith("ins_") or k.startswith("lamp_")):
     o, me = export_part(PARTS[name], sign, "cockpit", None)
@@ -1328,7 +1421,7 @@ for name in sorted(k for k in PARTS if k.startswith("ins_") or k.startswith("lam
         o["glass"] = MGLASS[name]
     parts_out.append(o); meshes[name] = me
 parts_out.append(frames_part())
-json.dump({"parts": parts_out, "eye": list(EYE)}, open(os.path.join(SRC, "cockpit_mesh.json"), "w"))
+json.dump({"parts": parts_out, "eye": list(EYE), "groups": GROUPS_OUT}, open(os.path.join(SRC, "cockpit_mesh.json"), "w"))
 print("[cockpit] wrote cockpit_mesh.json")
 
 # clearance checks against the airframe

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using BepInEx;
 using BepInEx.Logging;
@@ -55,6 +56,7 @@ namespace MiG29SMTInstruments
                 "Press again to end it early. Can be a joystick button (e.g. JoystickButton5)");
             CobraSeconds = Config.Bind("Flight", "Cobra time", 4f,
                 new BepInEx.Configuration.ConfigDescription("Seconds the limiters stay off after the Cobra key", new BepInEx.Configuration.AcceptableValueRange<float>(1f, 10f)));
+            CockpitSetups.Init(Config);   // cockpit setups (.cpit) in the Cockpits folder
             // some games destroy BepInEx's manager object on scene loads: scan from an object of our own
             var go = new GameObject("MiG29InstrumentsScanner");
             DontDestroyOnLoad(go);
@@ -80,6 +82,7 @@ namespace MiG29SMTInstruments
 
         void Update()
         {
+            CockpitSetups.Update();
             if (dev)   // developer hotkeys (only with BepInEx/mig29smt_dump.flag): F10 outside orbit camera, F11 back to the cockpit
             {
                 var cams = SceneSingleton<CameraStateManager>.i;
@@ -230,7 +233,7 @@ namespace MiG29SMTInstruments
             canopies = CanopiesField?.GetValue(ac) as Canopy[];
             // night lighting: a soft flood under the glareshield and one over the consoles, faded in after dusk
             // (placed from the gear lever, low in the gap left of the centre MFD: the panel's middle is 0.165 m to its right)
-            var lever = root.Find("SMT_ins_gear_lever");
+            var lever = root.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "SMT_ins_gear_lever");   // under its group object
             if (lever != null)
             {
                 var mid = lever.position + root.right * 0.165f + lever.up * 0.135f;
@@ -238,14 +241,22 @@ namespace MiG29SMTInstruments
                 panelLight = MakeLight("MiG29_panel_light", mid - lever.forward * 0.10f + lever.up * 0.07f, lever, 0.55f, new Color(1f, 0.55f, 0.42f));
                 consoleLight = MakeLight("MiG29_console_light", mid - lever.forward * 0.55f - lever.up * 0.05f, lever, 0.8f, new Color(1f, 0.5f, 0.4f));
             }
-            ScreenDriver.Setup(this, root);
+            // cockpit setups (.cpit): records the default cockpit, applies the selected setup and (re)builds the screens for it;
+            // anything wrong falls back to the default cockpit and its screens
+            try
+            {
+                var drv = this;
+                CockpitSetups.ScreensHook = (r, setup) => ScreenDriver.Rebuild(drv, r, setup);
+                CockpitSetups.Attach(root);
+            }
+            catch (Exception e) { MiG29InstrumentsPlugin.Log.LogError($"cockpit setups: {e}"); ScreenDriver.Rebuild(this, root, null); }
             MiG29InstrumentsPlugin.Log.LogInfo($"MiG-29 instruments on {ac.name}: {needles.Count} needles, ball {(ball != null)}, {lamps.Count} lamps, {engines.Count} engines");
         }
 
         Light MakeLight(string name, Vector3 pos, Transform parent, float range, Color col)
         {
             var go = new GameObject(name);
-            go.transform.SetParent(parent.parent, true);
+            go.transform.SetParent(Root(ac), true);   // the cockpit part, not the instrument group the anchor sits in
             go.transform.position = pos;
             go.layer = parent.gameObject.layer;
             var l = go.AddComponent<Light>();
