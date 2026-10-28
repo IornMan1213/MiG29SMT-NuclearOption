@@ -54,7 +54,7 @@ Multiplayer: everyone needs the same mod set (Blueprinter checks this).
   the gear down). AI SMTs drop theirs when empty.
 - **Countermeasures** from the BVP-30-26M dispensers on the tail booms: 90 IR flares and 90 radar chaff cartridges, plus the
   Radar ECM jammer. Cycle countermeasures to choose. Chaff works best when the missile sees you side-on and is close. The **Wingtips** station takes a pod on each wing tip
-  with 30 more: flares, chaff, or 15 of each, added to the jet's own while the pods are on.
+  with 60 more: flares, chaff, or 30 of each, added to the jet's own while the pods are on.
 - **Airbrakes** open with the throttle at idle; the **brake chute** streams after touchdown with the throttle at idle above
   ~110 km/h and is dropped below ~30 km/h or when you open the throttle; the **intake FOD doors** close on the ground below
   200 km/h with the engines running.
