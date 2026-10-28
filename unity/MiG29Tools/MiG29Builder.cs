@@ -1154,7 +1154,7 @@ namespace MiG29SMTTools
             for (int i = 0; i < liveries.arraySize; i++)
             {
                 var e = liveries.GetArrayElementAtIndex(i);
-                e.FindPropertyRelative("name").stringValue = "Fulcrum Two-Tone Grey";
+                e.FindPropertyRelative("name").stringValue = "Fulcrum Grey";
                 e.FindPropertyRelative("assetReference.m_AssetGUID").stringValue = guid;
                 e.FindPropertyRelative("assetReference.m_SubObjectName").stringValue = string.Empty;
             }
