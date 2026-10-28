@@ -325,7 +325,7 @@ namespace MiG29SMTTools
                 pylonDepth: 0.10f, fullMass: 1000f, pylonMass: 30f, drag: 0.08f, rcs: 0.05f,
                 desc: "PTB-1150 wing drop tanks: 1,150 litres (about 905 kg) of fuel each, used before the internal fuel. Select them and fire to drop them, or press the jettison key (Ctrl+J by default).");
             // ---------- wingtip countermeasure pods ----------
-            var podMesh = (Mesh)save(CmPodMesh(), $"{Dir}/mig29_cmpod.asset");
+            var podMesh = (Mesh)save(CmPodMesh(), $"{Dir}/mig29smt_cmpod.asset");
             var podFlares = BuildCmPod("flares", "Wingtip Flare Pod", podMesh, mat, flares: CmPodRounds, chaff: 0);
             var podChaff = BuildCmPod("chaff", "Wingtip Chaff Pod", podMesh, mat, flares: 0, chaff: CmPodRounds);
             var podBoth = BuildCmPod("mixed", "Wingtip Flare + Chaff Pod", podMesh, mat, flares: CmPodRounds / 2, chaff: CmPodRounds / 2);
@@ -375,7 +375,7 @@ namespace MiG29SMTTools
                     t.AddRange(new[] { b, b + 2, b + 1, b, b + 3, b + 2 });   // outward faces, Unity winding
                 }
             }
-            var m = new Mesh { name = "mig29_cmpod", vertices = v.ToArray(), normals = n.ToArray(), uv = uv.ToArray(), triangles = t.ToArray() };
+            var m = new Mesh { name = "mig29smt_cmpod", vertices = v.ToArray(), normals = n.ToArray(), uv = uv.ToArray(), triangles = t.ToArray() };
             m.RecalculateBounds(); m.RecalculateTangents();
             return m;
         }
@@ -385,7 +385,7 @@ namespace MiG29SMTTools
             var kr = AssetDatabase.LoadAssetAtPath<GameObject>(GO + "Multirole1_PLACEHOLDER.prefab");
             var krFlares = kr.GetComponentInChildren(T("FlareEjector"), true);
             var krJammer = kr.GetComponentInChildren(T("RadarJammer"), true);
-            var go = new GameObject("mig29_cmpod_" + id);
+            var go = new GameObject("mig29smt_cmpod_" + id);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             go.AddComponent<MeshRenderer>().sharedMaterial = mat;
             Transform Point(string n, float z)   // cartridges leave the pod's underside, a little aft
@@ -422,12 +422,12 @@ namespace MiG29SMTTools
                 pts.GetArrayElementAtIndex(0).FindPropertyRelative("part").objectReferenceValue = null;
                 so.ApplyModifiedPropertiesWithoutUndo();
             }
-            var prefab = SavePrefab(go, $"{Dir}/mig29_cmpod_{id}.prefab");
-            var mount = Clone("ECMPod1", $"mig29_cmpod_{id}_mount");
+            var prefab = SavePrefab(go, $"{Dir}/mig29smt_cmpod_{id}.prefab");
+            var mount = Clone("ECMPod1", $"mig29smt_cmpod_{id}_mount");
             var mso = new SerializedObject(mount);
             mso.FindProperty("prefab").objectReferenceValue = prefab;
             mso.FindProperty("info").objectReferenceValue = null;
-            mso.FindProperty("jsonKey").stringValue = "mig29_cmpod_" + id;
+            mso.FindProperty("jsonKey").stringValue = "mig29smt_cmpod_" + id;
             mso.FindProperty("mountName").stringValue = name;
             mso.FindProperty("ammo").intValue = flares + chaff;
             mso.FindProperty("mass").floatValue = 45f + 0.5f * (flares + chaff);   // pod and dispenser, 26 mm cartridges
