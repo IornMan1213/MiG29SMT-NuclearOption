@@ -1,10 +1,15 @@
 # Changelog
 
-## SMT 0.2.1 (unreleased)
+## SMT 0.2.1
 **Fixes and smoother frame rates.**
 - **Both antennas back.** The left fin now has the small rear-pointing spike at its tip that the right fin has (the source model
   only had the right one: `tools/fin_antenna.py` mirrors it), and the blade antenna on the spine behind the canopy is back (SMT 0.2.0
   took it out because it looked like a loose panel; that was the shading along its thin edges, fixed in this release).
+- **Cockpit setups** (new). Make your own cockpit in the [Cockpit Editor](https://github.com/IornMan1213/CockpitEditor/releases/tag/v1.1) (1.1 or newer): move, turn, resize
+  or hide any gauge, display or switch panel, add custom screens, MFD pages and decals. Put the `.cpit` file in the
+  `Cockpits` folder next to `MiG29SMTInstruments.dll` and pick it in Configuration Manager (MiG-29SMT Instruments > Cockpit >
+  Cockpit layout), or cycle setups in flight with the "Next cockpit layout key". A file that cannot be used falls back to
+  the stock cockpit.
 - **Stock cockpit by default.** The default SMT cockpit is the one SMT 0.2.0 shipped: every display and switch panel in
   its place, the stock MFD pages, no decals. A cockpit setup from the Cockpit Editor (`.cpit` in the `Cockpits` folder) still
   changes it for whoever wants to, and turning that off brings the stock one back.
