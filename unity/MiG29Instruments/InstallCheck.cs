@@ -11,7 +11,7 @@ namespace MiG29SMTInstruments
     static class InstallCheck
     {
         // the name the build gives this mod's .nobp: "MiG-29SMT_x.y.z.nobp"
-        static readonly Regex Nobp = new Regex(@"^MiG-29SMT_(\d+\.\d+\.\d+)\.nobp$", RegexOptions.IgnoreCase);
+        static readonly Regex Nobp = new Regex(@"^MiG-29SMT_(\d+(?:\.\d+){2,3})\.nobp$", RegexOptions.IgnoreCase);
 
         public static string Problem { get; private set; }
 
