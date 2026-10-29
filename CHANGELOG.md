@@ -2,6 +2,19 @@
 
 ## SMT 0.2.1 (unreleased)
 **Fixes and smoother frame rates.**
+- **Both antennas back.** The left fin now has the small rear-pointing spike at its tip that the right fin has (the source model
+  only had the right one: `tools/fin_antenna.py` mirrors it), and the blade antenna on the spine behind the canopy is back (SMT 0.2.0
+  took it out because it looked like a loose panel; that was the shading along its thin edges, fixed in this release).
+- **Stock cockpit by default.** The default SMT cockpit is the one SMT 0.2.0 shipped: every display and switch panel in
+  its place, the stock MFD pages, no decals. A cockpit setup from the Cockpit Editor (`.cpit` in the `Cockpits` folder) still
+  changes it for whoever wants to, and turning that off brings the stock one back.
+- **90 flares and 90 chaff** (was 30 of each).
+- **Wingtip countermeasure pods** (new "Wingtips" station): a slim pod on each wing tip with 60 more cartridges each: flares,
+  chaff, or 30 of each. They add to the jet's own flare and chaff counts while they are on.
+- **Separate flare and chaff keys** (optional). Configuration Manager > Countermeasures > Flares key / Chaff key pop flares or
+  chaff directly while held, whichever countermeasure is selected; each can be a keyboard key or a HOTAS button
+  (`JoystickButton5`, `Joystick1Button5`). Unbound by default: the game's own Countermeasures and Next Countermeasure buttons
+  work as before, with or without them.
 - **Canopy glass from every side.** The glass was one-sided: it vanished from inside the cockpit and wherever the open canopy
   showed its underside (the aircraft selection screen). It now has an inner layer, as the stock jets' canopies do.
 - **A plain grey base: no more star ghosts.** The default livery is now one flat grey (the old camouflage's lighter tone) with the

@@ -52,8 +52,10 @@ Multiplayer: everyone needs the same mod set (Blueprinter checks this).
 - **Drop tanks**: PTB-1500 centreline tank (~1,180 kg of fuel) and PTB-1150 wing tanks (~905 kg each). Their fuel is used first,
   and the aircraft's weight follows the fuel. Drop them by selecting them and firing, or all at once with **Ctrl+J** (blocked with
   the gear down). AI SMTs drop theirs when empty.
-- **Countermeasures** from the BVP-30-26M dispensers on the tail booms: 30 IR flares and 30 radar chaff cartridges, plus the
-  Radar ECM jammer. Cycle countermeasures to choose. Chaff works best when the missile sees you side-on and is close.
+- **Countermeasures** from the BVP-30-26M dispensers on the tail booms: 90 IR flares and 90 radar chaff cartridges, plus the
+  Radar ECM jammer. Cycle countermeasures to choose. Chaff works best when the missile sees you side-on and is close. The **Wingtips** station takes a pod on each wing tip
+  with 60 more: flares, chaff, or 30 of each, added to the jet's own while the pods are on. Optional separate **Flares** and **Chaff**
+  keys (keyboard or HOTAS buttons, unbound by default) are in the Configuration Manager under Countermeasures.
 - **Airbrakes** open with the throttle at idle; the **brake chute** streams after touchdown with the throttle at idle above
   ~110 km/h and is dropped below ~30 km/h or when you open the throttle; the **intake FOD doors** close on the ground below
   200 km/h with the engines running.
