@@ -59,20 +59,27 @@ d = rise(V[:, 2]) * falloff(V[:, 0])
 sel = (np.abs(V[:, 0]) < HALF_W) & (V[:, 2] < Z_FRONT) & (V[:, 2] > Z_BACK) & (V[:, 1] > sh + 0.015) & (d > 1e-4)
 V2 = V.copy(); V2[sel, 1] += d[sel]
 
-# normals of the moved vertices: area-weighted face normals around each position (body vertices are split at UV seams)
+# normals of the moved vertices, by angle as tools/normals_by_angle.py made the skin's: the mean of the (moved) face normals at
+# each position that lie within ANGLE of the faces this vertex belongs to (body vertices are split at UV seams and sharp edges)
+ANGLE = 50.0
 key = lambda p: (round(p[0], 4), round(p[1], 4), round(p[2], 4))
 moved_keys = {key(V[i]) for i in np.where(sel)[0]}
-acc = {}
+at_key, own = {}, {}
 for t in T:
     k3 = [key(V[i]) for i in t]
     if not any(k in moved_keys for k in k3): continue
     fn = np.cross(V2[t[1]] - V2[t[0]], V2[t[2]] - V2[t[0]])   # length = 2 * area
-    for k in k3:
-        if k in moved_keys: acc[k] = acc.get(k, 0) + fn
+    if np.dot(fn, N[t].sum(0)) < 0: fn = -fn                  # facing as the stored normals
+    for i, k in zip(t, k3):
+        if k in moved_keys: at_key.setdefault(k, []).append(fn); own[i] = own.get(i, 0) + fn
+cos = np.cos(np.radians(ANGLE))
 idx, pos, nrm = [], [], []
 for i in np.where(sel)[0]:
-    n = acc.get(key(V[i]))
-    if n is None or np.linalg.norm(n) < 1e-12: n = N[i]
+    ref = own.get(i)
+    if ref is None or np.linalg.norm(ref) < 1e-12: n = N[i]
+    else:
+        ref = ref / np.linalg.norm(ref)
+        n = sum(f for f in at_key[key(V[i])] if np.dot(f, ref) >= cos * np.linalg.norm(f))
     n = n / np.linalg.norm(n)
     if np.dot(n, N[i]) < 0: n = -n                        # keep the stored winding's facing
     idx.append(int(i)); pos += V2[i].round(5).tolist(); nrm += n.round(5).tolist()
