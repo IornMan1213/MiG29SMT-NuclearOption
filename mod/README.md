@@ -79,7 +79,7 @@ panel under the HUD shows the clock and the selected weapon, and its 16 keys lig
 gear, weapon armed, gun, radar lock, missile inbound, hydraulics, engine trouble, afterburner, intake doors, low fuel, empty drop
 tanks, low flares or chaff, and low altitude.
 
-**Cockpit setups:** layouts made in the cockpit editor (`.cpit` files) go in the `Cockpits` folder next to the DLL. Pick one in
+**Cockpit setups:** layouts made in the [Cockpit Editor](https://github.com/IornMan1213/CockpitEditor/releases/latest) (`.cpit` files) go in the `Cockpits` folder next to the DLL. Pick one in
 Configuration Manager (MiG-29SMT Instruments > Cockpit > Cockpit layout) or cycle them with the "Next cockpit layout key". A file
 that cannot be used falls back to the default cockpit, and the log says why.
 
@@ -108,6 +108,7 @@ mirror settings). **Ctrl+M** folds the mirrors.
 ## Links
 - Source, releases and issues: https://github.com/IornMan1213/MiG29SMT-NuclearOption
 - The MiG-29 Fulcrum (9.12) mod: https://github.com/IornMan1213/MiG29-NuclearOption
+- Cockpit Editor (make your own cockpit): https://github.com/IornMan1213/CockpitEditor
 
 ## Credits
 - MiG-29 3D model: "MiG-29 - Fighter Jet - Free" by **bohmerang** (https://sketchfab.com/3d-models/mig-29-fighter-jet-free-0a21787096244220b246ec8747e7b09c),
