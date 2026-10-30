@@ -2,7 +2,7 @@ MiG-29SMT for Nuclear Option - credits and licences
 https://github.com/IornMan1213/MiG29SMT-NuclearOption
 
 Install: put "MiG-29SMT_<version>.nobp" and "MiG29SMTInstruments.dll" in BepInEx/plugins/MiG-29SMT/.
-Requires BepInEx 5 and Blueprinter 2.0.1 or newer. Installs beside the MiG-29 Fulcrum mod.
+Requires BepInEx 5 and Blueprinter 2.1.1 or newer. Installs beside the MiG-29 Fulcrum mod.
 
 3D model
   "MiG-29 - Fighter Jet - Free" by bohmerang
