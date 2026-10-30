@@ -1,0 +1,24 @@
+{
+  "plugin": "iornman.mig29smt.instruments",
+  "name": "MiG-29SMT: cockpit and systems",
+  "author": "IornMan1213",
+  "description": "The MiG-29SMT mod's plugin: the glass cockpit's three colour displays and up-front control panel, radar warning, drop tanks, the Cobra key, folding mirrors (they reflect with NO Mirrors), Cockpit Editor setups, bullet holes and an install check. It comes with the MiG-29SMT .nobp in the same download.",
+  "links": [
+    {
+      "label": "GitHub",
+      "url": "https://github.com/IornMan1213/MiG29SMT-NuclearOption"
+    }
+  ],
+  "requisites": [
+    {
+      "plugin": "com.nikkorap.blueprinter",
+      "name": "Blueprinter",
+      "repository": "nikkorap/NOBlueprinter-Releases",
+      "minimumVersion": "2.1.1"
+    }
+  ],
+  "update": {
+    "repository": "IornMan1213/MiG29SMT-NuclearOption",
+    "asset": "MiG-29SMT-Mod_*.zip"
+  }
+}
