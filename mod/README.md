@@ -7,7 +7,7 @@ doors, stock-style damage, rear-view mirrors). It is a separate jet from the MiG
 
 ## Install
 1. Install [BepInEx 5](https://github.com/BepInEx/BepInEx) into the Nuclear Option folder.
-2. Install [Blueprinter](https://github.com/nikkorap/NOBlueprinter-Releases) (2.0.1 or newer) into `BepInEx/plugins`.
+2. Install [Blueprinter](https://github.com/nikkorap/NOBlueprinter-Releases) (2.1.1 or newer) into `BepInEx/plugins`.
 3. Unzip `MiG-29SMT-Mod_0.2.1.1.zip` into `BepInEx/plugins/MiG-29SMT/` (it holds `MiG-29SMT_0.2.1.1.nobp` and
    `MiG29SMTInstruments.dll`), or install the mod with a NOMNOM mod manager such as NOMM (listed as MiG-29SMT).
    Remove older `MiG-29SMT_*.nobp` files. The DLL draws the cockpit screens, gives the drop tanks their fuel and works the brake
