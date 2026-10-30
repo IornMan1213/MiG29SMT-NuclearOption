@@ -182,7 +182,7 @@ namespace MiG29SMTTools
             PrefabUtility.UnloadPrefabContents(prefabRoot);
 
             BuildHangarOp();
-            MiG29Polish.BuildLoadingScreens();
+            MiG29Polish.BuildLoadingScreens(); MiG29Polish.BuildHints();
             ModInfo(DisplayName, Version);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();

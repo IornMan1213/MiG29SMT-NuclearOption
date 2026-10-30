@@ -1,5 +1,13 @@
 # Changelog
 
+## SMT 0.2.2 (unreleased)
+**Blueprinter 2.1.1.** Requires Blueprinter 2.1.1 or newer.
+- **Loading-screen tips**: ten short hints on the features players miss (the Cobra key, dropping tanks, holding the R-27R's
+  lock, folding the mirrors, separate flare and chaff keys, NO Mirrors, cockpit setups, the UFCP keys, the laser-guided weapons).
+- **Clearer install problems**: once Blueprinter has loaded, the log confirms the jet is in the game, or says plainly that its
+  .nobp is missing or did not load.
+- Built with the new Blueprinter editor, which also fixes material textures not loading properly.
+
 ## SMT 0.2.1.1
 **Bug-fix update: shading and the intakes.** No new features, nothing else changes; update over 0.2.1 as usual.
 - **No more dark smears and shadow streaks on the skin, worst round the flaps and ailerons.** The model's normals (the
