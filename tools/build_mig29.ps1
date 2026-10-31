@@ -128,11 +128,14 @@ Get-ChildItem $env:MIG29_OUT -Filter MiG29SMTInstruments.dll | ForEach-Object { 
 $zip = Join-Path $env:MIG29_OUT "MiG-29SMT-Mod_$ver.zip"
 Remove-Item "$env:MIG29_OUT/MiG-29SMT-Mod_*.zip" -ErrorAction SilentlyContinue
 Copy-Item (Join-Path $repo "mod/CREDITS.txt") $env:MIG29_OUT -Force
+# DOORMAN's card for the .nobp (mod/doorman; the plugin's own is embedded in its DLL), beside it in the zip
+Copy-Item (Join-Path $repo "mod/doorman/MiG-29SMT.doorman.json") $env:MIG29_OUT -Force
 # custom MFD pages from the cockpit editor's page designer: next to the plugin DLL (it reads them from its own folder)
 $files = @("$env:MIG29_OUT/MiG-29SMT_$ver.nobp", "$env:MIG29_OUT/MiG29SMTInstruments.dll", "$env:MIG29_OUT/CREDITS.txt")
 Remove-Item "$env:MIG29_OUT/mfd_pages.json" -ErrorAction SilentlyContinue
 $pagesFile = Join-Path $repo "cockpit/mfd_pages.json"
 if (Test-Path $pagesFile) { Copy-Item $pagesFile $env:MIG29_OUT -Force; $files += "$env:MIG29_OUT/mfd_pages.json" }
+$files += "$env:MIG29_OUT/MiG-29SMT.doorman.json"   # DOORMAN's card for the .nobp
 Compress-Archive -Path $files -DestinationPath $zip -Force
 "OUTPUT $zip $((Get-Item $zip).Length)"
 if ($Release -and $code -eq 0) {

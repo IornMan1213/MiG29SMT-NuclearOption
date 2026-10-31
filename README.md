@@ -9,13 +9,13 @@ damage and rear-view mirrors that reflect with the [NO Mirrors](https://github.c
 
 [![Latest release](https://img.shields.io/github/v/release/IornMan1213/MiG29SMT-NuclearOption?include_prereleases&label=release)](https://github.com/IornMan1213/MiG29SMT-NuclearOption/releases)
 [![Licence: code MIT, model CC BY-NC-SA 4.0](https://img.shields.io/badge/licence-MIT%20%2B%20CC%20BY--NC--SA%204.0-blue)](#licence)
-[![Nuclear Option + Blueprinter](https://img.shields.io/badge/Nuclear%20Option-Blueprinter%202.0.1%2B-red)](https://github.com/nikkorap/NOBlueprinter-Releases)
+[![Nuclear Option + Blueprinter](https://img.shields.io/badge/Nuclear%20Option-Blueprinter%202.1.1%2B-red)](https://github.com/nikkorap/NOBlueprinter-Releases)
 
 **[Releases](https://github.com/IornMan1213/MiG29SMT-NuclearOption/releases) · [Report an issue](https://github.com/IornMan1213/MiG29SMT-NuclearOption/issues/new/choose) · [MiG-29 Fulcrum mod](https://github.com/IornMan1213/MiG29-NuclearOption)**
 
 ## Install (players)
 1. Install [BepInEx 5](https://github.com/BepInEx/BepInEx) into the Nuclear Option folder.
-2. Install [Blueprinter](https://github.com/nikkorap/NOBlueprinter-Releases) 2.0.1 or newer into `BepInEx/plugins`.
+2. Install [Blueprinter](https://github.com/nikkorap/NOBlueprinter-Releases) 2.1.1 or newer into `BepInEx/plugins`.
 3. Install it with a mod manager that uses [NOMNOM](https://github.com/KopterBuzz/NOMNOM) (e.g. NOMM; it is listed as
    **MiG-29SMT**), or by hand: download `MiG-29SMT-Mod_x.y.z.zip` from the newest
    [release](https://github.com/IornMan1213/MiG29SMT-NuclearOption/releases) and put the files from it in

@@ -1,4 +1,4 @@
-# MiG-29SMT for Nuclear Option (v0.2.1.1)
+# MiG-29SMT for Nuclear Option (v0.2.1.2)
 
 The modernised MiG-29SMT (9.19): an all-glass cockpit, the R-77 active radar missile, laser-guided Kh-29L and KAB-500L, the
 Kh-31P anti-radiation missile and more internal fuel, on top of everything the MiG-29 Fulcrum mod's 9.12 has (flight model,
@@ -7,8 +7,8 @@ doors, stock-style damage, rear-view mirrors). It is a separate jet from the MiG
 
 ## Install
 1. Install [BepInEx 5](https://github.com/BepInEx/BepInEx) into the Nuclear Option folder.
-2. Install [Blueprinter](https://github.com/nikkorap/NOBlueprinter-Releases) (2.0.1 or newer) into `BepInEx/plugins`.
-3. Unzip `MiG-29SMT-Mod_0.2.1.1.zip` into `BepInEx/plugins/MiG-29SMT/` (it holds `MiG-29SMT_0.2.1.1.nobp` and
+2. Install [Blueprinter](https://github.com/nikkorap/NOBlueprinter-Releases) (2.1.1 or newer) into `BepInEx/plugins`.
+3. Unzip `MiG-29SMT-Mod_0.2.1.2.zip` into `BepInEx/plugins/MiG-29SMT/` (it holds `MiG-29SMT_0.2.1.2.nobp` and
    `MiG29SMTInstruments.dll`), or install the mod with a NOMNOM mod manager such as NOMM (listed as MiG-29SMT).
    Remove older `MiG-29SMT_*.nobp` files. The DLL draws the cockpit screens, gives the drop tanks their fuel and works the brake
    chute, intake doors, nozzles and gear path; without it the SMT still flies, with dark screens, empty drop tanks, no brake
