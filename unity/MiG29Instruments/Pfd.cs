@@ -19,6 +19,10 @@ namespace MiG29SMTInstruments
 
         InstrumentDriver driver;
         readonly List<Screen> screens = new List<Screen>();
+        // what Add put on each screen quad (the mesh with 0..1 UVs, the drawn material and its texture) and what was there before:
+        // a cockpit setup change rebuilds this driver, and without this every rebuild left a full set of screen textures behind
+        class Owned { public MeshFilter mf; public Renderer r; public Mesh origMesh, mesh; public Material origMat, mat; public Texture2D tex; }
+        readonly List<Owned> owned = new List<Owned>();
         HashSet<string> offOverride;   // a cockpit setup's hidden screens (null: the build's "off" markers)
         Material dark;
 
@@ -118,6 +122,8 @@ namespace MiG29SMTInstruments
             // the quad's UVs point at a black atlas cell (a dark screen without the plugin): re-map them 0..1 across the screen
             var mf = screen.GetComponent<MeshFilter>();
             var mesh = Instantiate(mf.sharedMesh);
+            var own = new Owned { mf = mf, r = screen, origMesh = mf.sharedMesh, mesh = mesh, origMat = screen.sharedMaterial };
+            owned.Add(own);
             var v = mesh.vertices; var n = mesh.normals;
             Vector3 normal = n.Length > 0 ? n[0].normalized : Vector3.back;
             // the screen's own horizontal edge: of all vertex-to-vertex directions, the most nearly horizontal one (on the panel's
@@ -158,6 +164,7 @@ namespace MiG29SMTInstruments
             // texture (half / quarter / eighth size), which left these small screens as unreadable smudges on Low (user screenshot,
             // SMT 0.2.0). The stock tactical display is a render texture and never drops; these now behave the same.
             var tex = new Texture2D(width, height, TextureFormat.RGBA32, true) { name = "MiG29SMT_" + name, filterMode = FilterMode.Trilinear, anisoLevel = 8, wrapMode = TextureWrapMode.Clamp, ignoreMipmapLimit = true };
+            own.tex = tex;
             Material m;
             if (baseMat != null)
             {
@@ -175,10 +182,25 @@ namespace MiG29SMTInstruments
                 m.SetTexture("_BaseMap", tex);
             }
             screen.sharedMaterial = m;
+            own.mat = m;
             var canvas = new Canvas(width, height);
             canvas.SetShapeTris(Array.ConvertAll(uv, p => new Vector2(p.x * width, p.y * height)), mesh.triangles);   // shaped screens: pages lay out inside
             screens.Add(new Screen { name = name, c = canvas, tex = tex, draw = draw, rate = rate, due = screens.Count * 0.01f });
             return width / physW;
+        }
+
+        // the quads get back what they had before this driver (the next driver starts from those), then its copies go
+        void OnDestroy()
+        {
+            foreach (var o in owned)
+            {
+                if (o.mf != null && o.mf.sharedMesh == o.mesh) o.mf.sharedMesh = o.origMesh;
+                if (o.r != null && (o.r.sharedMaterial == o.mat || o.r.sharedMaterial == dark)) o.r.sharedMaterial = o.origMat;
+                if (o.mesh != null) Destroy(o.mesh);
+                if (o.mat != null) Destroy(o.mat);
+                if (o.tex != null) Destroy(o.tex);
+            }
+            owned.Clear();
         }
 
         // Only drawn from the cockpit: in the outside and map cameras nobody can read them (they used to redraw ~46 times a second
