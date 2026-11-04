@@ -1,5 +1,18 @@
 # Changelog
 
+## SMT 0.2.2 (unreleased)
+- **Zhuk-ME radar for BVR.** The SMT's radar now sees about 40% further (70 km on the game's scale, up from the 9.12's 50 km),
+  scans +-60 degrees instead of +-30 (keep the target while you crank off after a long shot), looks down better against low
+  targets and resists jamming better. The R-77 can now be used near its full range.
+- **Empty wing pylons are hidden**, as on the game's own jets: a pylon only shows while it carries something (issue #13, thanks
+  FIM43-Redeye).
+- **Chaff that behaves like chaff.** One press now runs a chaff programme (Configuration Manager > Countermeasures > Chaff
+  programme: Single, Short, Standard (default, 8 pairs over about 2 s) or Long). Chaff works when you fly side-on to the
+  missile (beaming), the cloud keeps working for a couple of seconds while it stays near you in the missile's view, active
+  radar missiles are harder to fool than semi-active ones, and it works better low down when the missile is above you
+  (ground clutter). A "Chaff programme" message shows when one starts. The flare and chaff load is unchanged.
+  The CMS key on the up-front panel flashes while a programme runs.
+
 ## SMT 0.2.1.2
 **Blueprinter 2.1.1.** Requires Blueprinter 2.1.1 or newer.
 - **No dark tint on the canopy from inside after visiting the outside view.** The game draws the cockpit view with a different

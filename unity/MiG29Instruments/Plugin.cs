@@ -32,6 +32,7 @@ namespace MiG29SMTInstruments
         internal static BepInEx.Configuration.ConfigEntry<bool> CobraSound;
         internal static BepInEx.Configuration.ConfigEntry<bool> R27RCue;
         internal static BepInEx.Configuration.ConfigEntry<BepInEx.Configuration.KeyboardShortcut> FlaresKey, ChaffKey;
+        internal static BepInEx.Configuration.ConfigEntry<string> ChaffProgramme;
 
         static void TryPatch(HarmonyLib.Harmony harmony, Type patch, string what)
         {
@@ -48,6 +49,9 @@ namespace MiG29SMTInstruments
             TryPatch(harmony, typeof(R27RNoTarget), "R-27R without a target");
             TryPatch(harmony, typeof(CmKeysBlock), "flare and chaff keys");   // the optional flare / chaff keys hold the countermeasure trigger (CmKeys.cs)
             TryPatch(harmony, typeof(BulletHolePatch), "bullet holes"); TryPatch(harmony, typeof(BlastHolePatch), "blast holes");   // holes where the shots land (Holes.cs)
+            TryPatch(harmony, typeof(ChaffProgrammePatch), "chaff programmes");   // chaff that behaves like chaff (Chaff.cs)
+            TryPatch(harmony, typeof(ChaffSarhPatch), "chaff against semi-active seekers"); TryPatch(harmony, typeof(ChaffArhPatch), "chaff against active seekers");
+            TryPatch(harmony, typeof(ChaffDatalinkPatch), "chaff against datalinks"); TryPatch(harmony, typeof(ChaffTerminalPatch), "chaff seduction");
             TryPatch(harmony, typeof(CmPodSpawn), "countermeasure pods"); TryPatch(harmony, typeof(CmPodAttach), "countermeasure pod points");   // the wingtip countermeasure pods: all their dispensers attached, their ejection points given the wing's part (Stores.cs)
             PanelLighting = Config.Bind("Cockpit", "Night panel lighting", 1f,
                 new BepInEx.Configuration.ConfigDescription("Brightness of the cockpit flood lights at night (0 = off)", new BepInEx.Configuration.AcceptableValueRange<float>(0f, 4f)));
@@ -71,6 +75,12 @@ namespace MiG29SMTInstruments
             ChaffKey = Config.Bind("Countermeasures", "Chaff key", BepInEx.Configuration.KeyboardShortcut.Empty,
                 "Optional: pops chaff while held, whichever countermeasure is selected. Unbound by default: the game's own Countermeasures " +
                 "and Next Countermeasure buttons work as always, with or without it. " + Hotkeys.JoystickHelp);
+            ChaffProgramme = Config.Bind("Countermeasures", "Chaff programme", "Standard",
+                new BepInEx.Configuration.ConfigDescription("What one press of chaff fires: Single (one pair), Short (4 pairs, 1 s), Standard (8 pairs, " +
+                    "about 2 s: enough to break a semi-active missile's lock while beaming it) or Long (12 pairs, 3.4 s: for active missiles). " +
+                    "Chaff works when you fly side-on to the missile (beaming) and best low down with the missile above you. The CMS key " +
+                    "flashes while a programme runs",
+                    new BepInEx.Configuration.AcceptableValueList<string>("Single", "Short", "Standard", "Long")));
             CobraKey = Config.Bind("Flight", "Cobra key", new BepInEx.Configuration.KeyboardShortcut(KeyCode.C, KeyCode.LeftControl),
                 "Turns Stability Assist (the pitch, g and AoA limiters) off for a few seconds for a Cobra or other post-stall move, then back on. " +
                 "Press again to end it early. " + Hotkeys.JoystickHelp);
@@ -90,6 +100,7 @@ namespace MiG29SMTInstruments
             go.AddComponent<GlassHudHider>();
             go.AddComponent<MirrorFolder>();
             go.AddComponent<CobraSwitch>();
+            go.AddComponent<ChaffDriver>();   // chaff programmes and clouds (Chaff.cs)
             go.AddComponent<CmKeys>();   // the optional flare / chaff keys
             go.AddComponent<R27RCue>();
             Log.LogInfo("MiG-29 instruments ready");
@@ -401,6 +412,7 @@ namespace MiG29SMTInstruments
 
             st.fuelKg = ac.GetFuelQuantity(); st.fuelFrac = ac.GetFuelLevel();
             var stores = ac.GetComponent<StoresDriver>(); st.ptbEmpty = stores != null && stores.TanksEmpty;
+            st.chaffProgramme = Chaff.ProgrammeRunning(ac);
             // hydraulics: engine-driven pumps (210 kgf/cm2), bleeding down slowly with both engines off or both damaged
             float hydTarget = (Mathf.Max(rl, rr) > 30f && !(st.damagedL && st.damagedR)) ? 210f : 0f;
             hydraulic += (hydTarget - hydraulic) * (1f - Mathf.Exp(-(hydTarget > hydraulic ? 1.5f : 0.15f) * dt));

@@ -95,7 +95,7 @@ namespace MiG29SMTTools
 
             // airframe split into the KR-67 damage parts: pieces detach with their part, get damage shading,
             // and become that part's hitbox
-            var airframe = data.parts.Where(p => (p.pivot == null || p.pivot.Length != 3) && p.name != "canopy" && p.name != "cockpit" && p.name != "gear_doors_closed").ToList();
+            var airframe = data.parts.Where(p => (p.pivot == null || p.pivot.Length != 3) && p.name != "canopy" && p.name != "cockpit" && p.name != "gear_doors_closed" && !p.name.StartsWith("pylon_")).ToList();
             SplitAirframe(root, visual, airframe, materials.skin, surfaces);
             UnityEngine.Object.DestroyImmediate(visual.gameObject);
             var doorsPart = data.parts.First(p => p.name == "gear_doors_closed");
@@ -116,11 +116,14 @@ namespace MiG29SMTTools
             MiG29Cockpit.Build(go, cockpitPart, ModelOffset, materials.skin, materials.glass, exterior, (o, path) => CreateOrReplace(o, path), (t, r) => AddDamageRenderer(t, r));
             AppendExteriorRenderers(go, exterior);
             TuneToMiG(root);
+            TuneRadar(root);
             MiG29Nozzles.RoundAfterburners(root, (o, path) => CreateOrReplace(o, path));
             bayIndices = BayIndices(go);
             RemoveInternalBays(go);
             var centreSet = MiG29Weapons.SetupCentreline(go, ModelOffset, weapons);
             var outerPylonSet = MiG29Weapons.SetupPylons(go, ModelOffset, weapons);
+            MiG29Weapons.SetupPylonFairings(go, ModelOffset, meshes.Where(kv => kv.Key.StartsWith("pylon_")).ToDictionary(kv => kv.Key, kv => kv.Value), materials.skin,
+                (t, r) => AddDamageRenderer(t, r));
             var wingtipSet = MiG29Weapons.SetupWingtips(go, ModelOffset, weapons, outerPylonSet);
             MiG29Countermeasures.Setup(go, ModelOffset);
             var oldGun = MiG29Weapons.SetupGun(go, ModelOffset, weapons);
@@ -1006,6 +1009,30 @@ namespace MiG29SMTTools
 
         const float MassScale = 0.72f;   // KR-67 16.0 t empty -> 11.5 t (MiG-29: ~11 t)
         const float FuelScale = 0.45f;   // 8.2 t internal fuel -> 3.7 t (MiG-29: ~3.5 t)
+
+        // The SMT's Zhuk-ME in place of the KR-67's radar (which the 9.12 keeps as its N019). The game's radar sees a target while
+        // (maxRange / distance) x RCS^0.25 - clutter x clutterFactor stays above minSignal, inside radarCone (half-angle, deg) of
+        // the nose (RadarParams.GetSignalStrength, Radar.RadarCheck), so:
+        //   maxRange 50 -> 70 km   detection range x1.4 (the Zhuk-ME sees roughly 1.4-1.7x as far as the N019: ~120 km against a
+        //                          fighter-sized target, against ~70 km); the R-77 (60 km) can now be used near its full range
+        //   radarCone 30 -> 60 deg the Zhuk-ME scans about +-60 deg or more: a target stays tracked while you crank off a BVR shot
+        //   clutterFactor 0.12 -> 0.08   better look-down / shoot-down against low targets
+        //   jamTolerance 0.7 -> 0.85     better ECCM: harder to jam, and (for the R-27R it guides) harder to chaff
+        // The R-27R's seeker takes its range from this radar too (SARHSeeker.Initialize).
+        const float RadarRange = 70000f, RadarCone = 60f, RadarClutter = 0.08f, RadarJamTolerance = 0.85f;
+
+        static void TuneRadar(Transform root)
+        {
+            var radar = root.GetComponentInChildren(TypeByName("Radar"), true);
+            if (radar == null) { Debug.LogError("[MiG29] radar: not found"); return; }
+            var so = new SerializedObject(radar);
+            so.FindProperty("RadarParameters.maxRange").floatValue = RadarRange;
+            so.FindProperty("radarCone").floatValue = RadarCone;
+            so.FindProperty("RadarParameters.clutterFactor").floatValue = RadarClutter;
+            so.FindProperty("jamTolerance").floatValue = RadarJamTolerance;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            Debug.Log($"[MiG29] radar: Zhuk-ME, {RadarRange / 1000:0} km, +-{RadarCone:0} deg, clutter {RadarClutter}, jam tolerance {RadarJamTolerance}");
+        }
 
         static void TuneToMiG(Transform root)
         {
