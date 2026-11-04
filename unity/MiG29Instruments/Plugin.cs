@@ -33,14 +33,22 @@ namespace MiG29SMTInstruments
         internal static BepInEx.Configuration.ConfigEntry<bool> R27RCue;
         internal static BepInEx.Configuration.ConfigEntry<BepInEx.Configuration.KeyboardShortcut> FlaresKey, ChaffKey;
 
+        static void TryPatch(HarmonyLib.Harmony harmony, Type patch, string what)
+        {
+            try { harmony.PatchAll(patch); }
+            catch (Exception e) { Log.LogWarning($"{what}: not patched, the game may have changed ({e.GetBaseException().Message})"); }
+        }
+
         void Awake()
         {
             Log = Logger;
             var harmony = new HarmonyLib.Harmony("iornman1213.mig29smt.instruments");
-            harmony.PatchAll(typeof(R27RNoTarget));
-            harmony.PatchAll(typeof(CmKeysBlock));   // the optional flare / chaff keys hold the countermeasure trigger (CmKeys.cs)
-            harmony.PatchAll(typeof(BulletHolePatch)); harmony.PatchAll(typeof(BlastHolePatch));   // holes where the shots land (Holes.cs)
-            harmony.PatchAll(typeof(CmPodSpawn)); harmony.PatchAll(typeof(CmPodAttach));   // the wingtip countermeasure pods: all their dispensers attached, their ejection points given the wing's part (Stores.cs)
+            // Each patch on its own: one the game has renamed a method under logs a warning and costs that feature, not the rest of
+            // Awake (config, install check, instruments).
+            TryPatch(harmony, typeof(R27RNoTarget), "R-27R without a target");
+            TryPatch(harmony, typeof(CmKeysBlock), "flare and chaff keys");   // the optional flare / chaff keys hold the countermeasure trigger (CmKeys.cs)
+            TryPatch(harmony, typeof(BulletHolePatch), "bullet holes"); TryPatch(harmony, typeof(BlastHolePatch), "blast holes");   // holes where the shots land (Holes.cs)
+            TryPatch(harmony, typeof(CmPodSpawn), "countermeasure pods"); TryPatch(harmony, typeof(CmPodAttach), "countermeasure pod points");   // the wingtip countermeasure pods: all their dispensers attached, their ejection points given the wing's part (Stores.cs)
             PanelLighting = Config.Bind("Cockpit", "Night panel lighting", 1f,
                 new BepInEx.Configuration.ConfigDescription("Brightness of the cockpit flood lights at night (0 = off)", new BepInEx.Configuration.AcceptableValueRange<float>(0f, 4f)));
             JettisonKey = Config.Bind("Drop tanks", "Jettison key", new BepInEx.Configuration.KeyboardShortcut(KeyCode.J, KeyCode.LeftControl),
@@ -309,6 +317,10 @@ namespace MiG29SMTInstruments
         void OnDestroy()
         {
             if (ac != null) ac.onRadarWarning -= OnRadarWarning;
+            // the lamps' lit material is this driver's own copy: freed with it, unless a lamp still shows it
+            bool inUse = false;
+            foreach (var r in lamps.Values) if (r != null && r.sharedMaterial == litMat) inUse = true;
+            if (litMat != null && !inUse) Destroy(litMat);
         }
 
         void OnRadarWarning(Aircraft.OnRadarWarning w)
@@ -438,24 +450,34 @@ namespace MiG29SMTInstruments
                         st.rwr.Add((Vector3.SignedAngle(fwd, to, Vector3.up), -1));
                         st.rwrPower = 1f;
                     }
-            if (Time.time >= nextStores) GatherStores(cock);
-            GatherSignature();
+            // the MFD pages' data on its own: an error there must not stop the gauges (it shares Sample with the needles)
+            try
+            {
+                if (Time.time >= nextStores) GatherStores(cock);
+                GatherSignature();
+            }
+            catch (Exception ex) { if (mfdErrors++ < 3) MiG29InstrumentsPlugin.Log.LogWarning($"MFD data: {ex}"); }
         }
+        int mfdErrors;
 
         // heat: each nozzle's IR source (JetNozzle sets it from the thrust, plus the afterburner) against its maximum; radar
         // cross-section: the unit's current RCS (stores add to it) against the clean figure; own radar on or off
         static readonly FieldInfo IrSourceField = typeof(JetNozzle).GetField("irSource", BindingFlags.Instance | BindingFlags.NonPublic);
         static readonly FieldInfo RadarActivatedField = typeof(Radar).GetField("activated", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        JetNozzle[] nozzles;
+        JetNozzle[] nozzles = new JetNozzle[0];
+        float nextNozzleScan;
         void GatherSignature()
         {
             // in flight every part is its own physics root, not under the aircraft: the nozzles come from the unit's part list (found
             // under the aircraft only, the IR reading stayed at zero; user screenshot, SMT 0.2.0)
-            if (nozzles == null || nozzles.Length == 0)
+            // (looked for once a second until found, not every frame: at spawn the parts may not be listed yet)
+            if (nozzles.Length == 0 && Time.time >= nextNozzleScan)
             {
+                nextNozzleScan = Time.time + 1f;
                 var found = new List<JetNozzle>(ac.GetComponentsInChildren<JetNozzle>(true));
-                foreach (var part in ac.partLookup)
-                    if (part != null) foreach (var nz in part.GetComponentsInChildren<JetNozzle>(true)) if (!found.Contains(nz)) found.Add(nz);
+                if (ac.partLookup != null)
+                    foreach (var part in ac.partLookup)
+                        if (part != null) foreach (var nz in part.GetComponentsInChildren<JetNozzle>(true)) if (!found.Contains(nz)) found.Add(nz);
                 nozzles = found.ToArray();
             }
             float heat = 0f, max = 0f;

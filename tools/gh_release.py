@@ -24,7 +24,8 @@ def main():
     ver = sys.argv[1]; pre = "--prerelease" in sys.argv
     log = open(os.path.join(ROOT, "CHANGELOG.md"), encoding="utf-8").read()
     m = re.search(rf"^## (?:SMT )?{re.escape(ver)}[^\n]*\n(.*?)(?=^## |\Z)", log, re.S | re.M)
-    notes = m.group(1).strip() if m else ""
+    if not m: sys.exit(f"no '## SMT {ver}' section in CHANGELOG.md: write the release notes first")
+    notes = m.group(1).strip()
     zipf = os.path.join(ROOT, "builds", f"MiG-29SMT-Mod_{ver}.zip")
     if not os.path.exists(zipf): sys.exit(f"{zipf} not found: build with tools/build_mig29.ps1 -Release first")
     notes += (f"\n\n**Install:** with a NOMNOM mod manager (NOMM), or unzip `MiG-29SMT-Mod_{ver}.zip` into `BepInEx/plugins/MiG-29SMT/` "
