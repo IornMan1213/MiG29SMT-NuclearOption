@@ -306,7 +306,8 @@ namespace MiG29SMTInstruments
                     {
                         if (y < y0) break;
                         string n = (name ?? "").ToUpperInvariant().Replace("RADAR ", "").Replace("IR ", ""); if (n.Length > 6) n = n.Substring(0, 6);
-                        c.Text(x0 + 4, y, n, White, 2);
+                        bool prg = s.chaffProgramme && n.Contains("CHAFF");   // a chaff programme running
+                        c.Text(x0 + 4, y, prg ? n + " PRG" : n, prg ? Cyan : White, 2);
                         c.Text(x1 - 4 - TW(ammo.ToString(), 2), y, ammo.ToString(), ammo == 0 ? Red : Green, 2);
                         y -= 22;
                     }

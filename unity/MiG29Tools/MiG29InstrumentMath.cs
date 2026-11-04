@@ -13,6 +13,7 @@ namespace MiG29SMTTools
         public float rpmL, rpmR, egtL, egtR;          // % and deg C
         public float fuelKg, fuelFrac = 1f;
         public bool ptbEmpty;   // drop tanks carried and empty (MiG29SMTInstruments StoresDriver)
+        public bool chaffProgramme;   // a chaff programme is running (MiG29SMTInstruments Chaff)
         public float oxygen = 150f, hydraulic, cabinKm, volts, brake, throttle, yaw;
         public float hours, minutes, seconds;
         public bool gearDown = true, gearMoving, onGround = true, canopyOpen, airborne;
@@ -158,7 +159,7 @@ namespace MiG29SMTTools
             U("ufc_intk", FodClosed(s.onGround, s.iasKmh, s.rpmL, s.rpmR));
             U("ufc_fuel", s.fuelFrac < 0.25f && (s.fuelFrac >= 0.10f || s.blink));
             U("ufc_ptb", s.ptbEmpty);
-            U("ufc_cms", cmCount > 0 && (flares <= 6 || chaff <= 6));
+            U("ufc_cms", cmCount > 0 && (flares <= 6 || chaff <= 6) || s.chaffProgramme && s.blink);   // steady: running low; flashing: a chaff programme
             U("ufc_alt", s.airborne && !s.gearDown && s.radAltM < 60 && s.vsMs < -2 && s.blink);
 
             // SPO-15: sector lamps nearest each emitter's bearing, power ladder, threat type
