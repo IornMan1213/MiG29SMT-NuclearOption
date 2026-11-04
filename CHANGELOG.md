@@ -2,7 +2,8 @@
 
 ## SMT 0.2.2 (unreleased)
 - **MiG-29 nose gear and wheels.** The last KR-67 parts you could see are gone: the nose leg is a slim oleo strut with a
-  trailing fork, the 9.12's twin nose wheels and its mudguard behind them, and the main wheels are new tyres and hubs at the
+  trailing fork, torque links and a steering unit, the 9.12's twin nose wheels and its mudguard behind them, and a round
+  landing light in its housing on the front of the leg. The main wheels are new tyres and hubs with lightening holes, at the
   same size. The ride height, suspension and retraction are unchanged.
 - Under the hood: the KR-67's leftover objects that did nothing (empty shells and unused pivots) are removed.
 - **Zhuk-ME radar for BVR.** The SMT's radar now sees about 40% further (70 km on the game's scale, up from the 9.12's 50 km),
