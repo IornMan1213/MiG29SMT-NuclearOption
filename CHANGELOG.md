@@ -1,6 +1,9 @@
 # Changelog
 
 ## SMT 0.2.2 (unreleased)
+- **The jet as a 3D model for livery painters** (`liveries/model`): `MiG-29SMT.fbx`, the whole jet as the game builds it with its
+  textures, and `MiG-29SMT_livery_paint.blend`, a Blender file ready to paint in (the airframe as one object, the livery texture set
+  as the brush's target). `tools/model_export` rebuilds both from a build.
 - **Liveries with the official kit.** Players can now paint MiG liveries with Shockfront's own livery kit and upload them to
   the Steam Workshop from the game, like liveries for the stock jets: `liveries/` has the guide, a MiG builder for the kit and
   the texture templates. The plugin gives the jet the Workshop tag the game's upload asks for (it refused the MiG before).
