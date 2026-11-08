@@ -38,7 +38,17 @@ See [mod/README.md](mod/README.md) for the full feature list, the cockpit screen
 - **R-77 (RVV-AE)** active radar missile on AKU-170 launchers; the default loadout is four R-77 and two R-73.
 - **The dorsal spine** behind the canopy holds the extra tank: 4,460 kg of internal fuel (the 9.12 carries 3,690 kg).
 - Radar size 0.15 clean (the 9.12's 0.2, less for the SMT's radar-absorbent treatment), rank 3, $90 M.
-- Eleven liveries, including the SMT's VKS Grey 26 and Dark Grey 52.
+- Two team liveries for each side, offered only at that side's airbases (BDF pilots never get PALA's, nor the reverse): BDF
+  Steel 41 and BDF Digital 68, PALA Digital Sand 402 and PALA Ash 427. The SMT's VKS Grey 26 and Dark Grey 52 are on the
+  Steam Workshop.
+
+## Liveries on the Steam Workshop
+
+The SMT's own two liveries, for either side, are on the Steam Workshop, made with Shockfront's official livery kit. Subscribe to
+the ones you want, and they appear in the MiG-29SMT's livery list next to the mod's own team liveries:
+
+- [SMT VKS Grey 26](https://steamcommunity.com/sharedfiles/filedetails/?id=3836426901)
+- [SMT Dark Grey 52](https://steamcommunity.com/sharedfiles/filedetails/?id=3836427583)
 
 ## Make your own livery
 

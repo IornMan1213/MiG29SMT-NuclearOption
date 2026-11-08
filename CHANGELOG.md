@@ -1,6 +1,15 @@
 # Changelog
 
 ## SMT 0.2.2 (unreleased)
+- **Team liveries.** Two for each side, offered only at that side's airbases, so BDF pilots never get PALA's and the reverse:
+  **BDF Steel 41** (light and medium blue-grey in large hard-edged panels, blue fin tops) and **BDF Digital 68** (blue-grey,
+  slate and green digital camouflage, a green band across the fins), both with the BDF shield on the fins; **PALA Digital Sand
+  402** (sand, tan and brown digital camouflage over a pale blue belly, red fin tips) and **PALA Ash 427** (ash and dark grey
+  splinter, black radome and anti-glare panel, red fin sweep), both with the PALA roundel on the fins. The numbers are on the
+  intake sides, where MiG-29s carry them.
+- **The SMT's own two liveries moved to the Steam Workshop** (links in the README): SMT VKS Grey 26 and SMT Dark Grey 52, for
+  either side, with their numbers moved to the intake sides, off the body line under the cockpit. The nine MiG-29 Fulcrum liveries
+  the SMT also carried are left to the 9.12. The mod is smaller for it.
 - **The jet as a 3D model for livery painters** (`liveries/model`): `MiG-29SMT.fbx`, the whole jet as the game builds it with its
   textures, and `MiG-29SMT_livery_paint.blend`, a Blender file ready to paint in (the airframe as one object, the livery texture set
   as the brush's target). `tools/model_export` rebuilds both from a build.
