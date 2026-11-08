@@ -61,8 +61,8 @@ Multiplayer: everyone needs the same mod set (Blueprinter checks this).
   200 km/h with the engines running.
 - **Damage like the stock jets**: soot, dents and scorched patches that spread, bullet holes where you are hit, and parts that
   break off cleanly with structure inside.
-- **Liveries**: VKS Grey 26 and Dark Grey 52 (the SMT's own), plus the 9.12's Grey (plain, no markings), Desert Tan, Digital Grey, Display
-  Blue, 29+20 Special, Tricolour Digital 741, OVT Splinter 917, White 44 and LII Gromov 84 (both factions can pick any).
+- **Liveries**: two for each side, each offered only at that side's airbases: BDF Steel 41 and BDF Digital 68, PALA Digital Sand
+  402 and PALA Ash 427. VKS Grey 26 and Dark Grey 52 are on the Steam Workshop (links in the README).
 
 ## Cockpit
 An all-glass panel with three large colour displays, each in a bezel. They are drawn by `MiG29SMTInstruments.dll`, only while
