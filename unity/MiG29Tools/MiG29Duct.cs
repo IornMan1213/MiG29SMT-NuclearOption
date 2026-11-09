@@ -4,7 +4,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace MiG29Tools
+namespace MiG29SMTTools
 {
     // Intake ducts that reach the engines (tools/intake_duct.py -> MiG29SMTSource/intake_duct.json). The model's ducts ended 3.4 m in on
     // a flat cap, a metre short of the RD-33 front, and a black panel half a metre behind each lip hid even that (it was there for the
