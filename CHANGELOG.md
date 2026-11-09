@@ -4,6 +4,9 @@
 - **The intakes run all the way to the engines.** Looking into an intake you now see down the duct to the RD-33's fan face, as
   on the stock jets whose ducts reach their engines, instead of a black panel half a metre inside the lip. The duct darkens toward
   the back and takes no livery paint.
+- **New intake doors.** Each door is now a panel of the duct roof, as on the real jet: it follows the duct's shape and lean, closes
+  wall to wall on the ground with the engines running, and lies flush with the duct roof in flight instead of vanishing. The
+  stowed main wheels no longer show inside the ducts.
 
 ## SMT 0.2.2
 - **Team liveries.** Two for each side, offered only at that side's airbases, so BDF pilots never get PALA's and the reverse:
