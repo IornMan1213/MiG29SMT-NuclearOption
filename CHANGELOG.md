@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+- **The intakes run all the way to the engines.** Looking into an intake you now see down the duct to the RD-33's fan face, as
+  on the stock jets whose ducts reach their engines, instead of a black panel half a metre inside the lip. The duct darkens toward
+  the back and takes no livery paint.
+
 ## SMT 0.2.2
 - **Team liveries.** Two for each side, offered only at that side's airbases, so BDF pilots never get PALA's and the reverse:
   **BDF Steel 41** (light and medium blue-grey in large hard-edged panels, blue fin tops) and **BDF Digital 68** (blue-grey,
