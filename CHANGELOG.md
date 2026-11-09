@@ -1,6 +1,6 @@
 # Changelog
 
-## SMT 0.2.2 (unreleased)
+## SMT 0.2.2
 - **Team liveries.** Two for each side, offered only at that side's airbases, so BDF pilots never get PALA's and the reverse:
   **BDF Steel 41** (light and medium blue-grey in large hard-edged panels, blue fin tops) and **BDF Digital 68** (blue-grey,
   slate and green digital camouflage, a green band across the fins), both with the BDF shield on the fins; **PALA Digital Sand
