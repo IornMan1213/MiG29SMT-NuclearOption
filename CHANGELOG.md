@@ -11,6 +11,8 @@
   behind it, instead of only the pitot. The leading-edge strips of each wing break off visibly instead of vanishing. An exposed
   intake duct reads as a metal trunk instead of a black hole. The engines leave with their own stretch of duct, and a broken-off
   nozzle no longer leaves an empty can.
+- **Damage shows before the holes from hits.** As a part takes damage from blasts, fire or many hits, small torn patches open
+  evenly over it onto the structure underneath, as on the stock jets. Bullet holes still appear exactly where each round lands.
 
 ## SMT 0.2.2
 - **Team liveries.** Two for each side, offered only at that side's airbases, so BDF pilots never get PALA's and the reverse:
